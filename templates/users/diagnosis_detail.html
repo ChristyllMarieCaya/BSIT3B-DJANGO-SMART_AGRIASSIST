@@ -1,0 +1,81 @@
+{% extends "theme/base.html" %}
+{% block title %}Diagnosis: {{ diagnosis.possible_disease }} — SMART AGRIASSIST{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-4">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Diagnosis Details</div>
+        <h2 class="page-title mb-1">{{ diagnosis.possible_disease }}</h2>
+        <p class="text-muted mb-0">Crop: <strong>{{ diagnosis.crop_name }}</strong> &bull; Analyzed on {{ diagnosis.created_at|date:"F j, Y, g:i a" }}</p>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <a href="{% url 'diagnoses_list' %}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-arrow-left me-1"></i> All Diagnoses
+        </a>
+        <a href="{% url 'ai_assistant' %}" class="btn btn-success">
+          <i class="fa-solid fa-robot me-1"></i> Ask AI Follow-up
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left: Image & Symptoms -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm mb-4">
+        {% if diagnosis.image %}
+        <img src="{{ diagnosis.image.url }}" alt="{{ diagnosis.crop_name }}" class="card-img-top" style="max-height: 380px; object-fit: cover;">
+        {% endif %}
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="badge bg-secondary-lt fs-6">{{ diagnosis.crop_name }}</span>
+            <span class="badge {% if 'high' in diagnosis.confidence_level|lower %}bg-success{% elif 'low' in diagnosis.confidence_level|lower %}bg-warning{% else %}bg-primary{% endif %} fs-6">
+              Confidence: {{ diagnosis.confidence_level }}
+            </span>
+          </div>
+
+          <h5 class="fw-bold mb-2">Observed Symptoms</h5>
+          <p class="text-muted">{{ diagnosis.observed_symptoms }}</p>
+
+          <div class="alert alert-info py-2 px-3 small mt-3" role="alert">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            <strong>Status:</strong> {% if diagnosis.is_confirmed %}Confirmed Diagnosis{% else %}Preliminary Visual Observation{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Treatment, Prevention & Recommendations -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+          <h4 class="card-title fw-bold text-success">
+            <i class="fa-solid fa-notes-medical me-2"></i> Treatment &amp; Management Recommendations
+          </h4>
+        </div>
+        <div class="card-body pt-0">
+          <div class="p-3 bg-light rounded mb-3" style="white-space: pre-line;">
+            {{ diagnosis.treatment_recommendations }}
+          </div>
+
+          <h5 class="fw-bold mt-4 mb-2 text-dark">
+            <i class="fa-solid fa-shield-halved me-1 text-primary"></i> Preventive Measures &amp; Sanitation
+          </h5>
+          <p class="text-muted" style="white-space: pre-line;">{{ diagnosis.preventive_measures }}</p>
+
+          <h5 class="fw-bold mt-4 mb-2 text-warning-emphasis">
+            <i class="fa-solid fa-user-doctor me-1 text-warning"></i> Agricultural Extension / Agronomist Advice
+          </h5>
+          <p class="text-muted" style="white-space: pre-line;">{{ diagnosis.technician_advice }}</p>
+
+          <div class="alert alert-warning mt-4 small" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            <strong>Pesticide &amp; Chemical Safety Notice:</strong> When applying any agricultural chemicals or bio-pesticides, strictly adhere to manufacturer label directions, target dosage, required personal protective equipment (PPE), and pre-harvest intervals (PHI). Consult your local municipal agricultural office (MAO/DA) for registered formulations in your locality.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

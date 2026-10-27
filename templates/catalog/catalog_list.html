@@ -1,0 +1,122 @@
+{% extends "theme/base.html" %}
+{% block title %}Crop Information — SMART AGRIASSIST{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <!-- Page header -->
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Crop Information</div>
+        <h2 class="page-title mb-1">Crop Catalog</h2>
+        <p class="text-muted mb-0">Browse the read-only agricultural reference catalog.</p>
+      </div>
+      <div class="col-auto">
+        <span class="badge bg-success-lt text-success">
+          <i class="fa-solid fa-book me-1"></i> {{ crops.paginator.count }} crops
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and category filter -->
+  <form method="GET" class="mb-3 d-flex flex-column flex-md-row gap-2 align-items-md-center">
+    <div class="input-group w-100" style="max-width: 460px;">
+      <span class="input-group-text"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+      <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search crops by name or description...">
+      {% if query %}
+      <a href="{% url 'catalog:catalog_list' %}" class="btn btn-outline-secondary">Clear</a>
+      {% endif %}
+      <button type="submit" class="btn btn-success">Search</button>
+    </div>
+    <div class="input-group w-100">
+      <span class="input-group-text"><i class="fa-solid fa-filter text-muted"></i></span>
+      <!-- Added onchange to auto-submit the form when an option is selected -->
+      <select name="category" class="form-select" onchange="this.form.submit()">
+        <!-- Added selected state for when no category is active -->
+        <option value="" {% if not category %}selected{% endif %}>All categories</option>
+        {% for cat_value, cat_label in categories %}
+        <option value="{{ cat_value }}" {% if category == cat_value %}selected{% endif %}>{{ cat_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <!-- Crop cards grid -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header border-0 bg-transparent">
+      <div class="card-title d-flex align-items-center justify-content-between">
+        <div>
+          Available Crops
+          {% if query or category %}
+          <span class="text-muted fw-normal ms-2">— filtered</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="row g-3">
+        {% for crop in crops %}
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+          <div class="crop-card h-100">
+            <span class="crop-icon">
+              <i class="fa-solid fa-leaf"></i>
+            </span>
+            <h5 class="crop-name">{{ crop.common_name }}</h5>
+            <p class="crop-meta text-muted small">{{ crop.scientific_name }}</p>
+            <span class="crop-badge">{{ crop.get_category_display }}</span>
+            <div class="crop-actions mt-auto">
+              <a href="{% url 'catalog:catalog_detail' crop.pk %}" class="btn btn-ghost-secondary btn-icon btn-sm" title="View details">
+                <i class="fa-solid fa-eye text-agri"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+          <div class="empty">
+            <div class="empty-icon">
+              <i class="fa-solid fa-seedling"></i>
+            </div>
+            <p class="empty-title">No crops found</p>
+            {% if query or category %}
+            <p class="empty-subtitle">Try adjusting your search or category filter.</p>
+            {% else %}
+            <p class="empty-subtitle">The crop catalog is currently empty.</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if crops.paginator.num_pages > 1 %}
+    <div class="card-footer d-flex align-items-center justify-content-between border-0 bg-transparent pb-3">
+      <p class="m-0 text-muted">
+        Showing <span class="fw-semibold">{{ crops.start_index }}</span> to <span class="fw-semibold">{{ crops.end_index }}</span> of <span class="fw-semibold">{{ crops.paginator.count }}</span> crops
+      </p>
+      <ul class="pagination m-0 ms-auto">
+        {% if crops.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ crops.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}">
+            <i class="fa-solid fa-chevron-left me-1"></i>Prev
+          </a>
+        </li>
+        {% endif %}
+        {% for num in crops.paginator.page_range %}
+        <li class="page-item {% if crops.number == num %}active{% endif %}">
+          <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if crops.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ crops.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}">
+            Next<i class="fa-solid fa-chevron-right ms-1"></i>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

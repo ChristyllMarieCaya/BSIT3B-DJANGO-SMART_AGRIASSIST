@@ -1,0 +1,493 @@
+{% extends "theme/base.html" %}
+{% block title %}Settings &amp; Personalization — SMART AGRIASSIST{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <!-- Page header -->
+  <div class="page-header d-print-none mb-4" aria-label="Page header">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">System Preferences</div>
+        <h2 class="page-title mb-1">Settings &amp; Personalization</h2>
+        <p class="text-muted mb-0">Configure your account, farm coordinates, AI Assistant preferences, weather alert thresholds, and automated reminder rules.</p>
+      </div>
+      <div class="col-auto">
+        <button type="submit" form="settingsForm" class="btn btn-success" id="topSaveBtn">
+          <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsAlert" class="alert d-none" role="alert"></div>
+
+  <form id="settingsForm" method="post" action="{% url 'settings_save' %}">
+    {% csrf_token %}
+
+    <div class="row g-4">
+      <!-- LEFT COLUMN: Account & Farm -->
+      <div class="col-lg-6">
+        <!-- 1. Account Settings -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-user-gear me-2"></i> Account Settings
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">First Name</label>
+                <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" placeholder="First Name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Last Name</label>
+                <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" placeholder="Last Name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control" value="{{ user.email }}" placeholder="farmer@example.com">
+                <div class="form-hint">Used for urgent weather alert emails.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control bg-light" value="{{ user.username }}" disabled>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Preferred Language</label>
+                <select name="preferred_language" class="form-select">
+                  <option value="en" {% if pref.preferred_language == 'en' %}selected{% endif %}>English</option>
+                  <option value="fil" {% if pref.preferred_language == 'fil' %}selected{% endif %}>Filipino (Tagalog)</option>
+                  <option value="ceb" {% if pref.preferred_language == 'ceb' %}selected{% endif %}>Cebuano / Bisaya</option>
+                  <option value="ilo" {% if pref.preferred_language == 'ilo' %}selected{% endif %}>Ilokano</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Time Zone</label>
+                <select name="timezone" class="form-select">
+                  <option value="Asia/Manila" {% if pref.timezone == 'Asia/Manila' %}selected{% endif %}>Asia/Manila (GMT+8)</option>
+                  <option value="UTC" {% if pref.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Measurement Units</label>
+                <select name="measurement_units" class="form-select">
+                  <option value="metric" {% if pref.measurement_units == 'metric' %}selected{% endif %}>Metric (°C, mm, km/h, ha/sqm)</option>
+                  <option value="imperial" {% if pref.measurement_units == 'imperial' %}selected{% endif %}>Imperial (°F, in, mph, acres)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Temperature Unit</label>
+                <select name="temperature_unit" class="form-select">
+                  <option value="celsius" {% if pref.temperature_unit == 'celsius' %}selected{% endif %}>Celsius (°C)</option>
+                  <option value="fahrenheit" {% if pref.temperature_unit == 'fahrenheit' %}selected{% endif %}>Fahrenheit (°F)</option>
+                </select>
+              </div>
+
+              <!-- Password management -->
+              <div class="col-12 mt-3 pt-3 border-top">
+                <span class="small fw-bold text-muted d-block mb-2">Change Password (leave empty to keep current):</span>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <input type="password" name="new_password" class="form-control form-control-sm" placeholder="New Password">
+                  </div>
+                  <div class="col-md-6">
+                    <input type="password" name="confirm_password" class="form-control form-control-sm" placeholder="Confirm Password">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Farm Settings & Location Coordinates -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-map-location-dot me-2"></i> Farm Settings &amp; Geolocation
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Farm / Holding Name</label>
+                <input type="text" name="farm_name" class="form-control" value="{{ pref.farm_name }}" placeholder="e.g. Green Valley Agricultural Farm">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Farm Location (Municipality/Province)</label>
+                <input type="text" name="farm_location" id="farmLocationInput" class="form-control" value="{{ pref.farm_location }}" placeholder="e.g. Cauayan, Isabela">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Latitude Coordinate</label>
+                <input type="number" step="0.000001" name="latitude" id="farmLatInput" class="form-control" value="{{ pref.latitude|default:'' }}" placeholder="e.g. 16.9754">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Longitude Coordinate</label>
+                <input type="number" step="0.000001" name="longitude" id="farmLonInput" class="form-control" value="{{ pref.longitude|default:'' }}" placeholder="e.g. 121.7743">
+              </div>
+              <div class="col-12">
+                <button type="button" class="btn btn-outline-success btn-sm" id="btnGpsLocation">
+                  <i class="fa-solid fa-crosshairs me-1"></i> Detect Current GPS Coordinates (Browser Geolocation)
+                </button>
+                <div class="form-hint" id="gpsStatus">Coordinates enable pinpoint agro-meteorological forecasting for your specific field.</div>
+              </div>
+              <div class="col-12 border-top pt-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="small text-muted">Manage registered crops on this farm:</span>
+                  <a href="{% url 'crops:crop_tracker' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fa-solid fa-wheat-awn me-1"></i> Open Crop Tracker
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. AI Assistant Settings -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-robot me-2"></i> AI Assistant Personalization
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Response Language</label>
+                <select name="ai_response_language" class="form-select">
+                  <option value="en" {% if pref.ai_response_language == 'en' %}selected{% endif %}>English</option>
+                  <option value="fil" {% if pref.ai_response_language == 'fil' %}selected{% endif %}>Filipino (Tagalog/Taglish)</option>
+                  <option value="ceb" {% if pref.ai_response_language == 'ceb' %}selected{% endif %}>Cebuano / Bisaya</option>
+                  <option value="ilo" {% if pref.ai_response_language == 'ilo' %}selected{% endif %}>Ilokano</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Response Detail Level</label>
+                <select name="ai_response_detail" class="form-select">
+                  <option value="concise" {% if pref.ai_response_detail == 'concise' %}selected{% endif %}>Concise (Quick bullet points)</option>
+                  <option value="balanced" {% if pref.ai_response_detail == 'balanced' %}selected{% endif %}>Balanced (Practical &amp; Actionable)</option>
+                  <option value="detailed" {% if pref.ai_response_detail == 'detailed' %}selected{% endif %}>Detailed (In-depth Agronomy)</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input type="checkbox" name="enable_conversation_history" class="form-check-input" id="enableHistory" {% if pref.enable_conversation_history %}checked{% endif %}>
+                  <label class="form-check-label" for="enableHistory">Enable Multi-Turn Conversation History</label>
+                </div>
+                <div class="form-hint">Allows the assistant to recall previous questions and diagnose follow-up symptoms in the same chat.</div>
+              </div>
+              <div class="col-12 border-top pt-2">
+                <div class="d-flex justify-content-between align-items-center small text-muted">
+                  <span>AI Service Status:</span>
+                  <span class="badge bg-success-lt text-success"><i class="fa-solid fa-circle-check me-1"></i> Google Gemini Connected</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Weather Alerts & Crop Reminders -->
+      <div class="col-lg-6">
+        <!-- 4. Weather Monitoring & Alert Thresholds -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-cloud-bolt me-2"></i> Weather Monitoring &amp; Alert Thresholds
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="form-check form-switch mb-2">
+                  <input type="checkbox" name="weather_monitoring_enabled" class="form-check-input" id="weatherMonSwitch" {% if pref.weather_monitoring_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="weatherMonSwitch">Automatic Background Weather Monitoring</label>
+                </div>
+                <div class="form-hint">Continuously inspects farm location forecast for heavy rain, storms, and extreme temperatures.</div>
+              </div>
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input type="checkbox" name="weather_alerts_enabled" class="form-check-input" id="weatherAlertsSwitch" {% if pref.weather_alerts_enabled %}checked{% endif %}>
+                  <label class="form-check-label" for="weatherAlertsSwitch">Generate Agricultural Severe Weather Alerts</label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Monitoring Update Frequency</label>
+                <select name="weather_update_frequency_hours" class="form-select">
+                  <option value="1" {% if pref.weather_update_frequency_hours == 1 %}selected{% endif %}>Every 1 hour</option>
+                  <option value="3" {% if pref.weather_update_frequency_hours == 3 %}selected{% endif %}>Every 3 hours (Recommended)</option>
+                  <option value="6" {% if pref.weather_update_frequency_hours == 6 %}selected{% endif %}>Every 6 hours</option>
+                  <option value="12" {% if pref.weather_update_frequency_hours == 12 %}selected{% endif %}>Every 12 hours</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Minimum Alert Severity</label>
+                <select name="weather_alert_min_severity" class="form-select">
+                  <option value="info" {% if pref.weather_alert_min_severity == 'info' %}selected{% endif %}>All (Info, Advisory, Warning)</option>
+                  <option value="advisory" {% if pref.weather_alert_min_severity == 'advisory' %}selected{% endif %}>Advisory &amp; higher</option>
+                  <option value="warning" {% if pref.weather_alert_min_severity == 'warning' %}selected{% endif %}>Warning &amp; Critical only</option>
+                  <option value="critical" {% if pref.weather_alert_min_severity == 'critical' %}selected{% endif %}>Critical Only</option>
+                </select>
+              </div>
+
+              <!-- Configurable Risk Thresholds -->
+              <div class="col-12 border-top pt-2">
+                <span class="small fw-bold text-muted d-block mb-2">Configurable Weather Sensitivity Thresholds:</span>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small mb-1">Heavy Rain Threshold (mm/hr)</label>
+                    <input type="number" step="1" name="rain_alert_threshold_mm" class="form-control form-control-sm" value="{{ pref.rain_alert_threshold_mm }}">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1">Strong Wind Threshold (km/h)</label>
+                    <input type="number" step="1" name="wind_alert_threshold_kmh" class="form-control form-control-sm" value="{{ pref.wind_alert_threshold_kmh }}">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1">Extreme Heat Threshold (°C)</label>
+                    <input type="number" step="1" name="temp_high_threshold_c" class="form-control form-control-sm" value="{{ pref.temp_high_threshold_c }}">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1">Low Temp Threshold (°C)</label>
+                    <input type="number" step="1" name="temp_low_threshold_c" class="form-control form-control-sm" value="{{ pref.temp_low_threshold_c }}">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quiet Hours -->
+              <div class="col-12 border-top pt-2">
+                <div class="form-check form-switch mb-2">
+                  <input type="checkbox" name="quiet_hours_enabled" class="form-check-input" id="quietHoursSwitch" {% if pref.quiet_hours_enabled %}checked{% endif %}>
+                  <label class="form-check-label small fw-bold" for="quietHoursSwitch">Quiet Hours (Suppress non-critical notifications)</label>
+                </div>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small mb-1">Start Time</label>
+                    <input type="time" name="quiet_hours_start" class="form-control form-control-sm" value="{{ pref.quiet_hours_start }}">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1">End Time</label>
+                    <input type="time" name="quiet_hours_end" class="form-control form-control-sm" value="{{ pref.quiet_hours_end }}">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Notification Delivery Channels Status -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-bullhorn me-2"></i> Notification Delivery Channels
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                <div>
+                  <div class="fw-semibold small"><i class="fa-solid fa-bell me-1 text-primary"></i> In-App Notifications</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Dashboard &amp; notification center alerts.</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                  <input type="checkbox" name="channel_in_app" class="form-check-input" {% if pref.channel_in_app %}checked{% endif %}>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                <div>
+                  <div class="fw-semibold small"><i class="fa-solid fa-globe me-1 text-info"></i> Browser Push Notifications</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Instant desktop/mobile browser alerts when weather threatens crops.</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-info" id="btnRequestBrowserPerm">Enable</button>
+                  <div class="form-check form-switch mb-0">
+                    <input type="checkbox" name="channel_browser" class="form-check-input" id="channelBrowserCheck" {% if pref.channel_browser %}checked{% endif %}>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                <div>
+                  <div class="fw-semibold small"><i class="fa-solid fa-envelope me-1 text-warning"></i> Email Alerts</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Sends urgent severe weather warnings to {{ user.email|default:'your email' }}.</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                  <input type="checkbox" name="channel_email" class="form-check-input" {% if pref.channel_email %}checked{% endif %}>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                <div>
+                  <div class="fw-semibold small"><i class="fa-solid fa-comment-sms me-1 text-secondary"></i> SMS Alerts (Optional Integration)</div>
+                  <div class="text-muted" style="font-size: 0.75rem;">Status: Optional SMS gateway integration ready.</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                  <input type="checkbox" name="channel_sms" class="form-check-input" {% if pref.channel_sms %}checked{% endif %}>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Crop Reminder Settings -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-calendar-check me-2"></i> Automated Crop Reminder Settings
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="form-check form-switch mb-2">
+                  <input type="checkbox" name="auto_crop_reminders_enabled" class="form-check-input" id="cropRemSwitch" {% if pref.auto_crop_reminders_enabled %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="cropRemSwitch">Enable Automatic Crop Care Reminders</label>
+                </div>
+                <div class="form-hint">Automatically schedules seedling care, irrigation, fertilizer, and pest inspection tasks as crops progress.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Reminder Notification Frequency</label>
+                <select name="reminder_frequency" class="form-select">
+                  <option value="daily" {% if pref.reminder_frequency == 'daily' %}selected{% endif %}>Daily summaries</option>
+                  <option value="weekly" {% if pref.reminder_frequency == 'weekly' %}selected{% endif %}>Weekly digest</option>
+                  <option value="milestone_only" {% if pref.reminder_frequency == 'milestone_only' %}selected{% endif %}>Stage milestones only</option>
+                </select>
+              </div>
+
+              <div class="col-12 border-top pt-2">
+                <span class="small fw-bold text-muted d-block mb-2">Activity Types to Notify:</span>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input type="checkbox" name="notify_growth_stages" class="form-check-input" id="chkStages" {% if pref.notify_growth_stages %}checked{% endif %}>
+                    <label class="form-check-label small" for="chkStages">Crop growth-stage transitions (e.g. tillering, flowering)</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" name="notify_fertilizer_irrigation" class="form-check-input" id="chkFert" {% if pref.notify_fertilizer_irrigation %}checked{% endif %}>
+                    <label class="form-check-label small" for="chkFert">Fertilizer split applications &amp; irrigation schedules</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" name="notify_pest_inspection" class="form-check-input" id="chkPest" {% if pref.notify_pest_inspection %}checked{% endif %}>
+                    <label class="form-check-label small" for="chkPest">Pest and disease scouting intervals</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" name="notify_harvest_estimation" class="form-check-input" id="chkHarvest" {% if pref.notify_harvest_estimation %}checked{% endif %}>
+                    <label class="form-check-label small" for="chkHarvest">Estimated harvest preparation countdown (7 days prior)</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Save Button Bar -->
+    <div class="card border-0 shadow-sm p-3 d-flex flex-row justify-content-between align-items-center">
+      <span class="small text-muted">All preferences are saved directly to your account and applied immediately.</span>
+      <button type="submit" class="btn btn-success px-4" id="bottomSaveBtn">
+        <i class="fa-solid fa-floppy-disk me-1"></i> Save Preferences
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('settingsForm');
+  const alertBox = document.getElementById('settingsAlert');
+  const gpsBtn = document.getElementById('btnGpsLocation');
+  const gpsStatus = document.getElementById('gpsStatus');
+  const latInput = document.getElementById('farmLatInput');
+  const lonInput = document.getElementById('farmLonInput');
+  const locInput = document.getElementById('farmLocationInput');
+  const browserBtn = document.getElementById('btnRequestBrowserPerm');
+  const browserCheck = document.getElementById('channelBrowserCheck');
+
+  // GPS Geolocation
+  if (gpsBtn) {
+    gpsBtn.addEventListener('click', function() {
+      if (!navigator.geolocation) {
+        gpsStatus.textContent = 'Geolocation is not supported by your browser.';
+        return;
+      }
+      gpsStatus.textContent = 'Detecting current GPS coordinates...';
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          latInput.value = pos.coords.latitude.toFixed(6);
+          lonInput.value = pos.coords.longitude.toFixed(6);
+          gpsStatus.textContent = `Coordinates detected: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+        },
+        function(err) {
+          gpsStatus.textContent = 'Unable to retrieve location: ' + err.message;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  }
+
+  // Browser Notification Permission
+  if (browserBtn) {
+    browserBtn.addEventListener('click', function() {
+      if (!("Notification" in window)) {
+        alert("This browser does not support desktop notifications.");
+        return;
+      }
+      Notification.requestPermission().then(function(permission) {
+        if (permission === "granted") {
+          browserCheck.checked = true;
+          browserBtn.textContent = "Granted";
+          browserBtn.className = "btn btn-sm btn-success";
+          new Notification("SMART AGRIASSIST", {
+            body: "Browser alerts are now activated for severe weather and crop care.",
+            icon: "/static/img/seedling.png"
+          });
+        } else {
+          alert("Notification permission was denied.");
+        }
+      });
+    });
+  }
+
+  // Form Submit via AJAX
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('bottomSaveBtn');
+    const topBtn = document.getElementById('topSaveBtn');
+    btn.disabled = true;
+    topBtn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+    const formData = new FormData(form);
+
+    fetch('{% url "settings_save" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      },
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      alertBox.className = 'alert alert-success alert-dismissible fade show';
+      alertBox.innerHTML = `
+        <i class="fa-solid fa-circle-check me-2"></i> ${data.message || 'Preferences saved successfully!'}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      alertBox.classList.remove('d-none');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    })
+    .catch(err => {
+      alertBox.className = 'alert alert-danger alert-dismissible fade show';
+      alertBox.innerHTML = `<i class="fa-solid fa-circle-exclamation me-2"></i> Error saving settings: ${err.message}`;
+      alertBox.classList.remove('d-none');
+    })
+    .finally(() => {
+      btn.disabled = false;
+      topBtn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk me-1"></i> Save Preferences';
+    });
+  });
+});
+</script>
+{% endblock %}

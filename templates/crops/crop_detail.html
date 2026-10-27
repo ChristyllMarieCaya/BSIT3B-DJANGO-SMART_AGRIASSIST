@@ -1,0 +1,218 @@
+{% extends "theme/base.html" %}
+{% block title %}{{ crop.crop_name }} Growth Timeline — SMART AGRIASSIST{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <!-- Page Header -->
+  <div class="page-header d-print-none mb-4">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Crop Growth Detail</div>
+        <div class="d-flex align-items-center gap-2">
+          <h2 class="page-title mb-0">{{ crop.crop_name }}</h2>
+          {% if crop.variety %}<span class="badge bg-secondary-lt fs-6">{{ crop.variety }}</span>{% endif %}
+          <span class="badge {% if crop.status == 'active' %}bg-success-lt text-success{% else %}bg-secondary-lt{% endif %} fs-6">
+            {{ crop.get_status_display }}
+          </span>
+        </div>
+        <p class="text-muted mb-0 mt-1">
+          <i class="fa-solid fa-location-dot me-1"></i> {{ crop.field_name|default:'Main Plot' }}{% if crop.farm_location %} &bull; {{ crop.farm_location }}{% endif %}
+          &bull; Planted on <strong>{{ crop.planting_date|date:"F j, Y" }}</strong>
+        </p>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <a href="{% url 'crops:crop_edit' crop.pk %}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+        </a>
+        <a href="{% url 'crops:crop_tracker' %}" class="btn btn-ghost-secondary">
+          <i class="fa-solid fa-arrow-left me-1"></i> All Crops
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Overall Lifecycle Progress Banner -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row align-items-center g-3">
+        <div class="col-md-3 border-end">
+          <div class="text-muted small">Current Stage</div>
+          <div class="h3 mb-0 text-success fw-bold">{{ crop.current_stage_name }}</div>
+          <div class="small text-muted mt-1">{{ crop.stage_progress }}% completed in this stage</div>
+        </div>
+        <div class="col-md-3 border-end">
+          <div class="text-muted small">Crop Age</div>
+          <div class="h3 mb-0 text-dark fw-bold">Day {{ crop.days_since_planting }}</div>
+          <div class="small text-muted mt-1">Total expected: {{ crop.expected_duration_days }} days</div>
+        </div>
+        <div class="col-md-3 border-end">
+          <div class="text-muted small">Estimated Harvest Window</div>
+          <div class="h3 mb-0 text-primary fw-bold">{{ crop.estimated_harvest_date|date:"M j, Y" }}</div>
+          <div class="small text-muted mt-1">{{ crop.days_until_harvest }} days remaining</div>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="text-muted small mb-1">Total Lifecycle</div>
+          <div class="h2 mb-1 text-success fw-bold">{{ crop.overall_progress }}%</div>
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-success" style="width: {{ crop.overall_progress }}%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Growth Stages Timeline -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-solid fa-timeline text-success me-1"></i> Growth Stages &amp; Agronomic Milestones
+          </span>
+          <span class="badge bg-secondary-lt">{{ growth.milestones|length }} Stages</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-column gap-3">
+            {% for m in growth.milestones %}
+            <div class="p-3 rounded border {% if m.is_current %}border-success bg-success-lt shadow-sm{% elif m.is_past %}bg-light opacity-75{% else %}bg-white{% endif %}">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge {% if m.is_current %}bg-success text-white{% elif m.is_past %}bg-secondary text-white{% else %}bg-outline-secondary{% endif %} rounded-circle px-2 py-1">
+                    {% if m.is_past %}<i class="fa-solid fa-check"></i>{% else %}{{ m.order }}{% endif %}
+                  </span>
+                  <h5 class="mb-0 fw-bold {% if m.is_current %}text-success{% endif %}">{{ m.name }}</h5>
+                  {% if m.is_current %}
+                  <span class="badge bg-success text-white small">Current Stage</span>
+                  {% endif %}
+                </div>
+                <div class="text-end small">
+                  <strong>Days {{ m.start_day }} - {{ m.end_day }}</strong>
+                  <div class="text-muted">{{ m.start_date|date:"M j" }} - {{ m.end_date|date:"M j, Y" }}</div>
+                </div>
+              </div>
+
+              <p class="text-muted small mb-2">{{ m.description }}</p>
+
+              <!-- Care Activities for this Stage -->
+              {% if m.activities %}
+              <div class="mb-2">
+                <strong class="small text-dark"><i class="fa-solid fa-list-check me-1 text-success"></i> Recommended Care:</strong>
+                <ul class="mb-0 small text-muted ps-3 mt-1">
+                  {% for act in m.activities %}
+                  <li>{{ act }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+
+              <!-- Fertilizer Guidance -->
+              {% if m.fertilizer_guidance %}
+              <div class="small mb-1 mt-2 p-2 rounded bg-white border">
+                <strong class="text-primary"><i class="fa-solid fa-flask me-1"></i> Fertilizer Timing:</strong>
+                <span class="text-muted">{{ m.fertilizer_guidance }}</span>
+              </div>
+              {% endif %}
+
+              <!-- Weather Vulnerability Warning -->
+              {% if m.weather_vulnerability %}
+              <div class="small p-2 rounded bg-warning-lt text-warning-emphasis border border-warning-subtle mt-1">
+                <i class="fa-solid fa-cloud-bolt me-1"></i>
+                <strong>Weather Sensitivity:</strong> {{ m.weather_vulnerability }}
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side Column: Stage Reminders & Assistant -->
+    <div class="col-lg-4">
+      <!-- Activity Reminders for this Crop -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">Stage Reminders</span>
+          <span class="badge bg-success-lt">{{ reminders|length }} Total</span>
+        </div>
+        <div class="card-body p-0">
+          {% if reminders %}
+          <div class="list-group list-group-flush">
+            {% for rem in reminders %}
+            <div class="list-group-item d-flex justify-content-between align-items-start py-3">
+              <div class="flex-grow-1 me-2">
+                <div class="d-flex align-items-center gap-1 mb-1">
+                  <span class="badge {% if rem.status == 'completed' %}bg-success-lt text-success{% elif rem.is_overdue %}bg-danger-lt text-danger{% else %}bg-secondary-lt{% endif %} small">
+                    {{ rem.get_status_display }}
+                  </span>
+                  <span class="small text-muted">&bull; {{ rem.due_date|date:"M j" }}</span>
+                </div>
+                <div class="fw-semibold small {% if rem.status == 'completed' %}text-decoration-line-through text-muted{% endif %}">
+                  {{ rem.title }}
+                </div>
+                {% if rem.notes %}
+                <div class="text-muted small mt-1">{{ rem.notes }}</div>
+                {% endif %}
+              </div>
+              <form method="post" action="{% url 'crops:toggle_reminder' rem.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm {% if rem.status == 'completed' %}btn-success{% else %}btn-ghost-secondary{% endif %}" title="Toggle status">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted small">
+            No reminders scheduled for this crop.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- AI Assistant Context Card -->
+      <div class="card border-0 shadow-sm bg-success-lt mb-4">
+        <div class="card-body">
+          <div class="d-flex gap-3 align-items-start">
+            <span class="stat-card-icon stat-card-icon-assistant">
+              <i class="fa-solid fa-robot"></i>
+            </span>
+            <div>
+              <h5 class="fw-bold mb-1 text-success">Agri AI Consultation</h5>
+              <p class="small text-muted mb-2">
+                Ask specific questions about this {{ crop.crop_name }} currently in {{ crop.current_stage_name }}.
+              </p>
+              <a href="{% url 'ai_assistant' %}" class="btn btn-sm btn-success">
+                Open AI Chat &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="card border-0 shadow-sm border-danger">
+        <div class="card-body">
+          <h6 class="text-danger fw-bold mb-2">Delete Crop Record</h6>
+          <p class="small text-muted mb-3">Removing this crop will also delete its scheduled reminders.</p>
+          <form method="post" action="{% url 'crops:crop_delete' crop.pk %}" onsubmit="return confirm('Are you sure you want to remove this crop record?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+              <i class="fa-solid fa-trash me-1"></i> Delete Crop
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

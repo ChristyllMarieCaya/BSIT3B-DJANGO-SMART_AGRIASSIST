@@ -1,26 +1,802 @@
 {% extends "theme/base.html" %}
+{% block title %}Dashboard — SMART AGRIASSIST{% endblock %}
 {% block content %}
 <div class="container-xl">
-  <div class="page-header d-print-none" aria-label="Page header">
-    <div class="container-xl">
-      <div class="row align-items-center">
-        <div class="col">
-          <div class="page-pretitle">Overview</div>
-          <div class="d-flex align-items-center gap-3 flex-wrap d-none d-md-flex">
-            <h2 class="page-title mb-0">Dashboard</h2>
+  <!-- Page header -->
+  <div class="page-header d-print-none mb-3" aria-label="Page header">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Smart Farm Dashboard</div>
+        <h2 class="page-title mb-1">Welcome back, {{ user.first_name|default:user.username }}</h2>
+        <p class="text-muted mb-0">Automated monitoring for your crops, weather, and AI agricultural assistance.</p>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <a href="{% url 'ai_assistant' %}" class="btn btn-success">
+          <i class="fa-solid fa-robot me-1"></i> Open AI Assistant
+        </a>
+        <a href="{% url 'crops:crop_add' %}" class="btn btn-outline-success">
+          <i class="fa-solid fa-plus me-1"></i> Register Crop
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Weather Alerts Banner (if any active alerts) -->
+  {% if active_weather_alerts %}
+  <div class="mb-4">
+    {% for alert in active_weather_alerts %}
+    <div class="alert {% if alert.severity == 'critical' %}alert-danger{% elif alert.severity == 'warning' %}alert-warning{% else %}alert-info{% endif %} d-flex align-items-start gap-3 shadow-sm border-0" role="alert">
+      <div class="fs-2 text-danger">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="alert-heading mb-1 fw-bold">{{ alert.title }}</h4>
+          <span class="badge bg-danger text-white">{{ alert.get_severity_display }}</span>
+        </div>
+        <p class="mb-2">{{ alert.agricultural_impact }}</p>
+        <div class="small fw-semibold">
+          <strong>Precautionary Actions:</strong>
+          <div class="text-dark mt-1" style="white-space: pre-line;">{{ alert.precautionary_actions }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card dh-stat-card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="stat-label">Active Field Crops</div>
+              <div class="stat-value text-success">{{ total_active_crops|default:0 }}</div>
+              <a href="{% url 'crops:crop_tracker' %}" class="small text-agri text-decoration-none">Track Growth &rarr;</a>
+            </div>
+            <span class="stat-card-icon stat-card-icon-leaf">
+              <i class="fa-solid fa-wheat-awn"></i>
+            </span>
           </div>
-          <h2 class="page-title mb-0 d-md-none">Dashboard</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card dh-stat-card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="stat-label">AI Assistant</div>
+              <div class="stat-value" id="aiStatusValue">{{ ai_status }}</div>
+              <a href="{% url 'ai_assistant' %}" class="small text-agri text-decoration-none">Ask Assistant &rarr;</a>
+            </div>
+            <span class="stat-card-icon stat-card-icon-assistant">
+              <i class="fa-solid fa-robot"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card dh-stat-card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="stat-label">Unread Notifications</div>
+              <div class="stat-value">{{ unread_count|default:0 }}</div>
+              <a href="{% url 'notifications' %}" class="small text-agri text-decoration-none">View All &rarr;</a>
+            </div>
+            <span class="stat-card-icon stat-card-icon-notifications">
+              <i class="fa-solid fa-bell"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card dh-stat-card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="stat-label">Farm Weather</div>
+              <div class="stat-value text-primary">{% if weather_current %}{{ weather_current.temperature }}{{ weather_current.temp_unit }}{% else %}Live{% endif %}</div>
+              <a href="{% url 'weather' %}" class="small text-agri text-decoration-none">{{ weather_location }} &rarr;</a>
+            </div>
+            <span class="stat-card-icon stat-card-icon-weather">
+              <i class="fa-solid fa-cloud-sun"></i>
+            </span>
+          </div>
         </div>
       </div>
     </div>
   </div>
-  <br>
 
-  <div class="card">
-    <div class="card-body text-muted">
-      Dashboard
+  <div class="row g-4 mb-4">
+    <!-- LEFT COLUMN: AI Assistant Chat & Crop Tracking -->
+    <div class="col-lg-7">
+      <!-- Prominent AI Assistant Interactive Card -->
+      <div class="card border-0 shadow-sm chat-interface mb-4" id="chat">
+        <div class="chat-header">
+          <div class="chat-title">
+            <div class="d-flex align-items-center gap-2">
+              <span class="stat-card-icon stat-card-icon-assistant p-2">
+                <i class="fa-solid fa-robot fa-lg"></i>
+              </span>
+              <div>
+                <h5 class="mb-0 fw-bold">Agri AI Assistant</h5>
+                <p class="text-muted small mb-0">Ask crop care, disease diagnosis, fertilizer &amp; weather questions</p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-status">
+            <span class="chat-status-dot text-muted" id="aiStatusDot"></span>
+            <span id="aiStatusText" aria-live="polite" class="small">{{ ai_status_text }}</span>
+          </div>
+        </div>
+
+        <!-- Quick Question Chips -->
+        <div class="p-2 border-bottom bg-light d-flex flex-wrap gap-1">
+          <button type="button" class="btn btn-sm btn-outline-secondary quick-chip" data-q="What disease is affecting my rice plants?">
+            <i class="fa-solid fa-magnifying-glass me-1"></i> Rice diseases
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary quick-chip" data-q="Why are tomato leaves turning yellow?">
+            <i class="fa-solid fa-leaf me-1"></i> Yellow leaves
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary quick-chip" data-q="What fertilizer is appropriate for my current crop stage?">
+            <i class="fa-solid fa-flask me-1"></i> Stage fertilizer
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary quick-chip" data-q="Should I water or spray my crops today?">
+            <i class="fa-solid fa-cloud-rain me-1"></i> Irrigation &amp; spray
+          </button>
+        </div>
+
+        <div class="chat-window" style="min-height: 240px; max-height: 320px;">
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-bubble bubble-assistant">
+              Hello {{ user.first_name|default:user.username }}! I am your SMART Agricultural Assistant.
+              You can ask me questions about your crops, irrigation schedules, or attach a plant photo for automated disease diagnosis.
+              <span class="chat-meta">Just now</span>
+            </div>
+          </div>
+          <div class="chat-typing d-none" id="chatTyping" aria-live="polite">
+            <span></span><span></span><span></span>
+            <span class="visually-hidden">Agri AI is thinking...</span>
+          </div>
+        </div>
+
+        <div class="chat-form">
+          {% csrf_token %}
+          <input
+            type="text"
+            id="chatInput"
+            class="form-control"
+            placeholder="Ask a question or upload a crop photo..."
+            autocomplete="off"
+            {% if not ai_available %}disabled{% endif %}
+          />
+          <label class="btn btn-ghost-secondary btn-icon btn-sm" id="chatAttach" title="Attach photo" {% if not ai_available %}disabled{% endif %}>
+            <input type="file" id="chatImageFile" accept="image/jpeg,image/png,image/webp" class="d-none">
+            <i class="fa-solid fa-image"></i>
+          </label>
+          <label class="btn btn-ghost-secondary btn-icon btn-sm" id="chatCamera" title="Take photo with camera" {% if not ai_available %}disabled{% endif %}>
+            <i class="fa-solid fa-camera"></i>
+          </label>
+          <button type="button" class="btn btn-chat-send" id="chatSend" title="Send" {% if not ai_available %}disabled{% endif %}>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+
+        <!-- Image preview -->
+        <div id="chatImagePreview" class="d-none p-2 border-top bg-light d-flex align-items-center gap-2">
+          <img id="chatImagePreviewThumb" src="" alt="Attached photo" style="max-width: 60px; max-height: 60px; object-fit: cover; border-radius: 0.5rem;">
+          <div class="flex-grow-1 small text-muted" id="chatImagePreviewName">photo.jpg</div>
+          <button type="button" class="btn btn-ghost-secondary btn-sm" id="chatImageRemove" title="Remove">
+            <i class="fa-solid fa-times text-danger"></i>
+          </button>
+        </div>
+
+        <!-- Camera modal -->
+        <div class="modal fade" id="chatCameraModal" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-camera me-2"></i> Take Crop Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body text-center">
+                <video id="chatCameraVideo" autoplay playsinline style="width: 100%; max-width: 480px; border-radius: 0.75rem; background: #000;"></video>
+                <canvas id="chatCameraCanvas" style="display: none;"></canvas>
+                <div class="mt-3 d-flex gap-2 justify-content-center">
+                  <button type="button" class="btn btn-outline-secondary" id="chatCameraStart">Start Camera</button>
+                  <button type="button" class="btn btn-success" id="chatCameraCapture" disabled>Capture</button>
+                  <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+                <div class="mt-2 form-hint" id="chatCameraStatus">Click Start to enable the camera.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Registered Crops Growth Stages Card -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-solid fa-wheat-awn text-success me-1"></i> Active Crop Growth Stages
+          </span>
+          <a href="{% url 'crops:crop_tracker' %}" class="small text-agri text-decoration-none">View All Crops &rarr;</a>
+        </div>
+        <div class="card-body pt-0">
+          {% if active_crops %}
+          <div class="d-flex flex-column gap-3">
+            {% for crop in active_crops %}
+            <div class="p-3 border rounded bg-white">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <div>
+                  <strong class="h5 mb-0">{{ crop.crop_name }}</strong>
+                  {% if crop.variety %}<span class="badge bg-secondary-lt ms-1">{{ crop.variety }}</span>{% endif %}
+                  <span class="text-muted small ms-2"><i class="fa-solid fa-location-dot me-1"></i> {{ crop.field_name|default:'Main Field' }}</span>
+                </div>
+                <span class="badge bg-success-lt text-success">{{ crop.current_stage_name }}</span>
+              </div>
+              <div class="d-flex justify-content-between small text-muted mb-1 mt-2">
+                <span>Day {{ crop.days_since_planting }} of {{ crop.expected_duration_days }}</span>
+                <span>{{ crop.days_until_harvest }} days to harvest</span>
+              </div>
+              <div class="progress" style="height: 8px;">
+                <div class="progress-bar bg-success" style="width: {{ crop.overall_progress }}%;"></div>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                <span class="small text-muted">Care: {{ crop.recommended_activities.0|default:'Monitor soil moisture'|truncatechars:50 }}</span>
+                <a href="{% url 'crops:crop_detail' crop.pk %}" class="btn btn-sm btn-ghost-success py-0">Timeline &rarr;</a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted small">
+            <i class="fa-solid fa-seedling fa-2x mb-2 text-success"></i>
+            <p>No active crops registered yet.</p>
+            <a href="{% url 'crops:crop_add' %}" class="btn btn-sm btn-success">Register a Crop</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent Crop Health Diagnoses -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-solid fa-notes-medical text-primary me-1"></i> Recent Crop Diagnoses
+          </span>
+          <a href="{% url 'diagnoses_list' %}" class="small text-agri text-decoration-none">All Diagnoses &rarr;</a>
+        </div>
+        <div class="card-body pt-0">
+          {% if recent_diagnoses %}
+          <div class="row g-3">
+            {% for diag in recent_diagnoses %}
+            <div class="col-md-6">
+              <div class="card h-100 border p-2 bg-light">
+                <div class="d-flex gap-2 align-items-center">
+                  {% if diag.image %}
+                  <img src="{{ diag.image.url }}" alt="{{ diag.crop_name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 0.5rem;">
+                  {% endif %}
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex justify-content-between">
+                      <strong class="small text-truncate">{{ diag.crop_name }}</strong>
+                      <span class="badge {% if 'high' in diag.confidence_level|lower %}bg-success{% else %}bg-primary{% endif %} small" style="font-size: 0.65rem;">
+                        {{ diag.confidence_level }}
+                      </span>
+                    </div>
+                    <div class="text-danger small text-truncate fw-semibold">{{ diag.possible_disease }}</div>
+                    <a href="{% url 'diagnosis_detail' diag.pk %}" class="small text-agri text-decoration-none">Analysis &rarr;</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted small">
+            <i class="fa-solid fa-camera fa-2x mb-2 text-muted"></i>
+            <p class="mb-1">No plant photo diagnoses recorded.</p>
+            <span class="small">Upload or capture a leaf photo in the AI Assistant to diagnose plant problems.</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Weather, Reminders, Conversations & Notifications -->
+    <div class="col-lg-5">
+      <!-- Live Weather Today -->
+      <div class="card border-0 shadow-sm weather-card mb-4" id="weather">
+        <div class="card-header border-0 bg-transparent pb-0">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <span class="card-title fw-bold">Live Weather Today</span>
+              <div class="weather-meta"><span id="weatherLocation">{{ weather_location }}</span> &bull; <span id="weatherUpdated">{{ weather_updated }}</span></div>
+            </div>
+            <button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" id="weatherRefresh" title="Refresh weather">
+              <i class="fa-solid fa-arrows-rotate" id="weatherRefreshIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          {% if weather_available and weather_current %}
+          <div class="weather-header mb-3">
+            <div>
+              <div class="weather-temp"><span id="weatherTemperature">{{ weather_current.temperature }}</span><span id="weatherTempUnit">{{ weather_current.temp_unit }}</span></div>
+              <div class="weather-condition" id="weatherCondition">{{ weather_current.condition }}</div>
+              <div class="weather-meta" id="weatherDescription">{{ weather_current.description }}</div>
+            </div>
+            <div class="text-end">
+              <i class="fa-solid fa-{{ weather_current.icon|default:'cloud' }}" id="weatherIcon" style="font-size: 3.25rem; color: #f59e0b;"></i>
+            </div>
+          </div>
+
+          <div class="weather-details" id="weatherDetails">
+            <div class="weather-detail-item">
+              <span class="weather-detail-value" id="weatherHumidity">{{ weather_current.humidity }}%</span>
+              <span class="weather-detail-label">Humidity</span>
+            </div>
+            <div class="weather-detail-item">
+              <span class="weather-detail-value" id="weatherWind">{{ weather_current.wind_speed }} {{ weather_current.wind_unit }}</span>
+              <span class="weather-detail-label">Wind</span>
+            </div>
+            {% if weather_current.rain_1h %}
+            <div class="weather-detail-item" id="weatherRainItem">
+              <span class="weather-detail-value" id="weatherRain">{{ weather_current.rain_1h }} mm/h</span>
+              <span class="weather-detail-label">Rain</span>
+            </div>
+            {% endif %}
+          </div>
+
+          {% if weather_forecast %}
+          <div class="weather-forecast mt-3">
+            <div class="weather-forecast-title small text-muted mb-2">3-Day Forecast</div>
+            <div class="forecast-grid">
+              {% for day in weather_forecast %}
+              <div class="forecast-day" data-weather-forecast>
+                <i class="fa-solid fa-{{ day.icon|default:'cloud' }}" data-weather-icon style="color: #f59e0b;"></i>
+                <strong data-weather-range class="small">{{ day.temperature_max }}° / {{ day.temperature_min }}°</strong>
+                <div data-weather-condition style="font-size: 0.7rem; color: var(--tblr-muted);">{{ day.condition }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% else %}
+          <div class="text-center py-4">
+            <i class="fa-solid fa-cloud-sun fa-3x text-muted mb-2"></i>
+            <p class="text-muted small">{{ weather_error|default:'Weather data is not available.' }}</p>
+            <a href="{% url 'settings' %}" class="btn btn-outline-secondary btn-sm">Configure Farm Location</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Upcoming Farming Activities & Reminders -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-solid fa-clipboard-check text-warning me-1"></i> Upcoming Activities &amp; Tasks
+          </span>
+          <span class="badge bg-warning-lt">{{ upcoming_reminders|length }} Due</span>
+        </div>
+        <div class="card-body p-0">
+          {% if upcoming_reminders %}
+          <div class="list-group list-group-flush">
+            {% for rem in upcoming_reminders %}
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+              <div class="min-w-0 me-2">
+                <div class="d-flex align-items-center gap-1">
+                  <span class="badge bg-secondary-lt small" style="font-size: 0.65rem;">{{ rem.get_activity_type_display }}</span>
+                  <span class="small text-muted">{{ rem.due_date|date:"M j" }}</span>
+                </div>
+                <div class="small fw-semibold text-truncate">{{ rem.title }}</div>
+              </div>
+              <form method="post" action="{% url 'crops:toggle_reminder' rem.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-ghost-success" title="Mark Done">
+                  <i class="fa-regular fa-circle-check"></i>
+                </button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted small">
+            <i class="fa-solid fa-circle-check fa-2x mb-2 text-success"></i>
+            <p class="mb-0">No pending farm activities.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent Conversations Card -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-regular fa-comments text-success me-1"></i> Recent Conversations
+          </span>
+          <a href="{% url 'ai_assistant' %}" class="small text-agri text-decoration-none">Chat &rarr;</a>
+        </div>
+        <div class="card-body p-0">
+          {% if recent_conversations %}
+          <div class="list-group list-group-flush">
+            {% for conv in recent_conversations %}
+            <a href="{% url 'ai_assistant' %}?conv={{ conv.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3">
+              <div class="min-w-0">
+                <div class="small fw-semibold text-truncate">Conversation from {{ conv.started_at|date:"M j, Y" }}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">{{ conv.message_count }} messages</div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-muted small"></i>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-3 text-muted small">
+            No previous conversations.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent Notifications Card -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-solid fa-bell text-secondary me-1"></i> Notifications
+          </span>
+          <a href="{% url 'notifications' %}" class="small text-agri text-decoration-none">View All &rarr;</a>
+        </div>
+        <div class="card-body p-0">
+          {% if recent_notifications %}
+          <div class="list-group list-group-flush">
+            {% for n in recent_notifications %}
+            <div class="list-group-item py-2 px-3 border-bottom {% if not n.read %}bg-success-lt{% endif %}">
+              <div class="d-flex justify-content-between align-items-start">
+                <h6 class="mb-0 fw-semibold small">{{ n.title }}</h6>
+                <span class="text-muted" style="font-size: 0.7rem;">{{ n.created_at|date:"M j" }}</span>
+              </div>
+              <p class="mb-0 text-muted" style="font-size: 0.8rem;">{{ n.message|truncatechars:65 }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-3 text-muted small">
+            No notifications.
+          </div>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
-
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var input = document.getElementById('chatInput');
+  var sendBtn = document.getElementById('chatSend');
+  var messages = document.getElementById('chatMessages');
+  var typing = document.getElementById('chatTyping');
+  var currentConversationId = null;
+  var isSending = false;
+  var aiAvailable = {{ ai_available|lower }};
+
+  // Image upload state
+  var imageFileInput = document.getElementById('chatImageFile');
+  var imagePreview = document.getElementById('chatImagePreview');
+  var imagePreviewThumb = document.getElementById('chatImagePreviewThumb');
+  var imagePreviewName = document.getElementById('chatImagePreviewName');
+  var imageRemoveBtn = document.getElementById('chatImageRemove');
+  var selectedImageFile = null;
+  var selectedImageUrl = null;
+
+  // Camera state
+  var cameraModal = new bootstrap.Modal(document.getElementById('chatCameraModal'));
+  var cameraVideo = document.getElementById('chatCameraVideo');
+  var cameraCanvas = document.getElementById('chatCameraCanvas');
+  var cameraStartBtn = document.getElementById('chatCameraStart');
+  var cameraCaptureBtn = document.getElementById('chatCameraCapture');
+  var cameraStatus = document.getElementById('chatCameraStatus');
+  var cameraStream = null;
+
+  function scrollBottom() {
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function addBubble(text, type, imageUrl) {
+    var div = document.createElement('div');
+    div.className = 'chat-bubble bubble-' + type;
+    var meta = document.createElement('span');
+    meta.className = 'chat-meta';
+    var now = new Date();
+    meta.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (text) {
+      var textNode = document.createTextNode(text);
+      div.appendChild(textNode);
+    }
+    if (imageUrl) {
+      var img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = 'Shared photo';
+      img.style.maxWidth = '200px';
+      img.style.maxHeight = '200px';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '0.75rem';
+      img.style.display = 'block';
+      img.style.marginTop = '0.75rem';
+      div.appendChild(img);
+    }
+    div.appendChild(meta);
+    messages.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function showTyping(show) {
+    typing.classList.toggle('d-none', !show);
+    if (show) scrollBottom();
+  }
+
+  function updateSendButton() {
+    var hasContent = input.value.trim().length > 0 || selectedImageFile !== null;
+    sendBtn.disabled = (!aiAvailable) || !hasContent || isSending;
+  }
+
+  function setAiStatus(state, message) {
+    var statusText = document.getElementById('aiStatusText');
+    var statusDot = document.getElementById('aiStatusDot');
+    var statusValue = document.getElementById('aiStatusValue');
+    var labels = {
+      checking: 'Checking connection...',
+      connected: 'Connected',
+      temporarily_unavailable: 'Temporarily unavailable',
+      configuration_error: 'Configuration error'
+    };
+    if (statusText) statusText.textContent = message || labels[state] || labels.temporarily_unavailable;
+    if (statusDot) {
+      statusDot.className = 'chat-status-dot ' +
+        (state === 'connected' ? 'text-success'
+          : state === 'temporarily_unavailable' ? 'text-warning' : 'text-muted');
+    }
+    if (statusValue) {
+      statusValue.textContent = state === 'connected' ? 'Connected'
+        : state === 'configuration_error' ? 'Not configured'
+        : state === 'temporarily_unavailable' ? 'Unavailable' : 'Checking';
+    }
+    if (state === 'connected') aiAvailable = true;
+    if (state === 'configuration_error') aiAvailable = false;
+    updateSendButton();
+  }
+
+  function refreshAiStatus() {
+    setAiStatus('checking');
+    fetch('{% url "gemini_status" %}', { credentials: 'same-origin' })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok && !data.state) throw new Error('Status check failed');
+          return data;
+        });
+      })
+      .then(function (data) { setAiStatus(data.state, data.message); })
+      .catch(function () {
+        setAiStatus('temporarily_unavailable', 'Gemini is temporarily unavailable. You can retry your request.');
+      });
+  }
+
+  function clearImageSelection() {
+    selectedImageFile = null;
+    selectedImageUrl = null;
+    imageFileInput.value = '';
+    imagePreview.classList.add('d-none');
+    imagePreviewThumb.src = '';
+    imagePreviewName.textContent = '';
+    updateSendButton();
+  }
+
+  // Quick Chips
+  document.querySelectorAll('.quick-chip').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      input.value = this.dataset.q;
+      updateSendButton();
+      sendMessage();
+    });
+  });
+
+  // File input change
+  imageFileInput.addEventListener('change', function () {
+    var file = this.files[0];
+    if (!file) return;
+    selectedImageFile = file;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      selectedImageUrl = e.target.result;
+      imagePreviewThumb.src = e.target.result;
+      imagePreviewName.textContent = file.name;
+      imagePreview.classList.remove('d-none');
+    };
+    reader.readAsDataURL(file);
+    updateSendButton();
+  });
+
+  // Remove image
+  imageRemoveBtn.addEventListener('click', clearImageSelection);
+
+  // Camera: start
+  cameraStartBtn.addEventListener('click', function () {
+    cameraStatus.textContent = 'Requesting camera access...';
+    cameraStartBtn.disabled = true;
+    cameraCaptureBtn.disabled = true;
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function (stream) {
+        cameraStream = stream;
+        cameraVideo.srcObject = stream;
+        cameraStatus.textContent = 'Camera ready. Click Capture.';
+        cameraCaptureBtn.disabled = false;
+      })
+      .catch(function (err) {
+        cameraStatus.textContent = 'Camera unavailable: ' + err.message;
+        cameraStartBtn.disabled = false;
+      });
+  });
+
+  // Camera: capture
+  cameraCaptureBtn.addEventListener('click', function () {
+    cameraCanvas.width = cameraVideo.videoWidth;
+    cameraCanvas.height = cameraVideo.videoHeight;
+    var ctx = cameraCanvas.getContext('2d');
+    ctx.drawImage(cameraVideo, 0, 0);
+    var dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.8);
+
+    fetch(dataUrl)
+      .then(function (res) { return res.blob(); })
+      .then(function (blob) {
+        var file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+        selectedImageFile = file;
+        selectedImageUrl = dataUrl;
+        imagePreviewThumb.src = dataUrl;
+        imagePreviewName.textContent = 'capture.jpg';
+        imagePreview.classList.remove('d-none');
+        cameraModal.hide();
+        updateSendButton();
+      });
+
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function (track) { track.stop(); });
+      cameraStream = null;
+    }
+  });
+
+  document.getElementById('chatCameraModal').addEventListener('hidden.bs.modal', function () {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function (track) { track.stop(); });
+      cameraStream = null;
+    }
+    cameraStartBtn.disabled = false;
+    cameraCaptureBtn.disabled = true;
+    cameraStatus.textContent = 'Click Start to enable the camera.';
+  });
+
+  document.getElementById('chatAttach').addEventListener('click', function (e) {
+    if (!aiAvailable) { e.preventDefault(); return; }
+    imageFileInput.click();
+  });
+
+  document.getElementById('chatCamera').addEventListener('click', function (e) {
+    if (!aiAvailable) { e.preventDefault(); return; }
+    cameraModal.show();
+  });
+
+  function sendMessage() {
+    if (isSending) return;
+    var text = input.value.trim();
+    if (!text && !selectedImageFile) return;
+    if (!text) text = '[Crop photo attached for diagnosis]';
+
+    var curFile = selectedImageFile;
+    var curUrl = selectedImageUrl;
+    input.value = '';
+    clearImageSelection();
+
+    addBubble(text, 'user', curUrl);
+    showTyping(true);
+    isSending = true;
+    updateSendButton();
+
+    var formData = new FormData();
+    formData.append('message', text);
+    if (currentConversationId) {
+      formData.append('conversation_id', currentConversationId);
+    }
+    if (curFile) {
+      formData.append('image', curFile);
+    }
+
+    fetch('{% url "chat" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      },
+      body: formData
+    })
+    .then(function (resp) {
+      return resp.json().then(function (data) {
+        if (!resp.ok) {
+          throw new Error(data.error || 'The assistant request failed.');
+        }
+        return data;
+      });
+    })
+    .then(function (data) {
+      showTyping(false);
+      if (data.reply) {
+        if (data.conversation_id) {
+          currentConversationId = data.conversation_id;
+        }
+        addBubble(data.reply, 'assistant');
+      } else if (data.error) {
+        addBubble('Error: ' + data.error, 'assistant');
+      }
+    })
+    .catch(function (error) {
+      showTyping(false);
+      addBubble('Connection issue: ' + error.message, 'assistant');
+    })
+    .finally(function () {
+      isSending = false;
+      updateSendButton();
+    });
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('input', updateSendButton);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Weather Refresh
+  var refreshBtn = document.getElementById('weatherRefresh');
+  var refreshIcon = document.getElementById('weatherRefreshIcon');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function () {
+      if (refreshBtn.disabled) return;
+      refreshBtn.disabled = true;
+      if (refreshIcon) refreshIcon.classList.add('fa-spin');
+      fetch('{% url "weather_api" %}')
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+          if (data.available && data.current) {
+            document.getElementById('weatherTemperature').textContent = data.current.temperature;
+            document.getElementById('weatherCondition').textContent = data.current.condition;
+            document.getElementById('weatherDescription').textContent = data.current.description;
+            document.getElementById('weatherHumidity').textContent = data.current.humidity + '%';
+            document.getElementById('weatherWind').textContent = data.current.wind_speed + ' ' + data.current.wind_unit;
+            var iconElem = document.getElementById('weatherIcon');
+            if (iconElem) iconElem.className = 'fa-solid fa-' + data.current.icon;
+          }
+        })
+        .finally(function () {
+          refreshBtn.disabled = false;
+          if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+        });
+    });
+  }
+
+  refreshAiStatus();
+  updateSendButton();
+  scrollBottom();
+})();
+</script>
 {% endblock %}

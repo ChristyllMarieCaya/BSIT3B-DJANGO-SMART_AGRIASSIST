@@ -1,0 +1,235 @@
+{% extends "theme/base.html" %}
+{% block title %}{% if action == 'edit' %}Edit Crop{% else %}Register New Crop{% endif %} — SMART AGRIASSIST{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-4">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Crop Tracking</div>
+        <h2 class="page-title mb-1">{% if action == 'edit' %}Edit Crop Record{% else %}Register a New Crop{% endif %}</h2>
+        <p class="text-muted mb-0">Enter crop information to automatically generate growth stages, care schedule, and harvest projections.</p>
+      </div>
+      <div class="col-auto">
+        <a href="{% url 'crops:crop_tracker' %}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-arrow-left me-1"></i> Back to Crops
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <form method="post" id="cropForm">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label required">Crop Species / Name</label>
+              <div class="input-group">
+                <input type="text" name="crop_name" id="cropNameInput" class="form-control"
+                       placeholder="e.g. Rice, Corn (Maize), Tomato, Eggplant"
+                       value="{% if action == 'edit' %}{{ crop.crop_name }}{% else %}{{ form_data.crop_name|default:'' }}{% endif %}" required>
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Select
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  {% for c in available_crops %}
+                  <li><a class="dropdown-item crop-select-option" href="#" data-crop="{{ c }}">{{ c }}</a></li>
+                  {% endfor %}
+                </ul>
+              </div>
+              <div class="form-hint">Choose from agronomic models or type any custom crop name.</div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Crop Variety (if known)</label>
+                <input type="text" name="variety" class="form-control"
+                       placeholder="e.g. NSIC Rc 222, Pioneer 30G44, Diamante Max"
+                       value="{% if action == 'edit' %}{{ crop.variety }}{% else %}{{ form_data.variety|default:'' }}{% endif %}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required">Planting / Sowing Date</label>
+                <input type="date" name="planting_date" id="plantingDateInput" class="form-control"
+                       value="{% if action == 'edit' %}{{ crop.planting_date|date:'Y-m-d' }}{% else %}{{ form_data.planting_date|default:today }}{% endif %}" required>
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Field / Plot Identifier</label>
+                <input type="text" name="field_name" class="form-control"
+                       placeholder="e.g. North Plot, Paddy 2, Greenhouse B"
+                       value="{% if action == 'edit' %}{{ crop.field_name }}{% else %}{{ form_data.field_name|default:'' }}{% endif %}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Farm Location</label>
+                <input type="text" name="farm_location" class="form-control"
+                       placeholder="e.g. Cauayan, Isabela"
+                       value="{% if action == 'edit' %}{{ crop.farm_location }}{% else %}{{ form_data.farm_location|default:'' }}{% endif %}">
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Expected Growth Duration (Days)</label>
+                <input type="number" name="expected_duration_days" id="durationInput" class="form-control"
+                       placeholder="e.g. 115" min="10" max="400"
+                       value="{% if action == 'edit' %}{{ crop.expected_duration_days }}{% else %}{{ form_data.expected_duration_days|default:'115' }}{% endif %}">
+                <div class="form-hint">Auto-calculated from crop reference if left unchanged.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Planted Area (sq. meters)</label>
+                <input type="number" step="0.01" name="area_sqm" class="form-control"
+                       placeholder="e.g. 1000" min="0"
+                       value="{% if action == 'edit' %}{{ crop.area_sqm }}{% else %}{{ form_data.area_sqm|default:'0' }}{% endif %}">
+              </div>
+            </div>
+
+            {% if action == 'edit' %}
+            <div class="mb-3">
+              <label class="form-label">Crop Status</label>
+              <select name="status" class="form-select">
+                <option value="active" {% if crop.status == 'active' %}selected{% endif %}>Active (Growing)</option>
+                <option value="harvested" {% if crop.status == 'harvested' %}selected{% endif %}>Harvested</option>
+                <option value="lost" {% if crop.status == 'lost' %}selected{% endif %}>Crop Loss / Cancelled</option>
+                <option value="planned" {% if crop.status == 'planned' %}selected{% endif %}>Planned</option>
+              </select>
+            </div>
+            {% endif %}
+
+            <div class="mb-4">
+              <label class="form-label">Crop-Specific Field Notes</label>
+              <textarea name="notes" class="form-control" rows="3"
+                        placeholder="Soil preparation, basal fertilizer applied, seed source, target yield... ">{% if action == 'edit' %}{{ crop.notes }}{% else %}{{ form_data.notes|default:'' }}{% endif %}</textarea>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'crops:crop_tracker' %}" class="btn btn-ghost-secondary">Cancel</a>
+              <button type="submit" class="btn btn-success">
+                <i class="fa-solid fa-check me-1"></i> {% if action == 'edit' %}Save Changes{% else %}Register Crop &amp; Generate Timeline{% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Dynamic Stage Preview Sidebar -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm sticky-top" style="top: 1rem;">
+        <div class="card-header bg-transparent border-0">
+          <span class="card-title fw-bold">
+            <i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i> Automatic Growth Preview
+          </span>
+        </div>
+        <div class="card-body" id="previewContainer">
+          <div id="previewLoading" class="text-center py-4 d-none">
+            <div class="spinner-border text-success" role="status"></div>
+            <div class="text-muted small mt-2">Calculating crop growth timeline...</div>
+          </div>
+          <div id="previewContent">
+            <div class="text-muted small mb-3">
+              Calculated timeline and harvest milestones for your entered planting date:
+            </div>
+            <div class="p-3 bg-light rounded mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Crop:</span>
+                <strong id="previewCropName">Rice</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="small text-muted">Total Duration:</span>
+                <span id="previewDuration">115 days</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="small text-muted">Estimated Harvest:</span>
+                <strong class="text-success" id="previewHarvestDate">Calculating...</strong>
+              </div>
+            </div>
+
+            <h6 class="fw-bold mb-2">Estimated Milestones &amp; Stages:</h6>
+            <div class="list-group list-group-flush small" id="previewMilestonesList">
+              <!-- Milestones populated dynamically via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const cropInput = document.getElementById('cropNameInput');
+  const dateInput = document.getElementById('plantingDateInput');
+  const durationInput = document.getElementById('durationInput');
+
+  // Fast select dropdown
+  document.querySelectorAll('.crop-select-option').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.preventDefault();
+      cropInput.value = this.dataset.crop;
+      fetchPreview();
+    });
+  });
+
+  cropInput.addEventListener('change', fetchPreview);
+  dateInput.addEventListener('change', fetchPreview);
+  durationInput.addEventListener('input', debounce(fetchPreview, 400));
+
+  function debounce(fn, ms) {
+    let timer;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), ms);
+    };
+  }
+
+  function fetchPreview() {
+    const cropName = cropInput.value.trim() || 'Rice';
+    const plantingDate = dateInput.value.trim();
+    const duration = durationInput.value.trim();
+
+    const url = `{% url 'crops:stage_preview_api' %}?crop_name=${encodeURIComponent(cropName)}&planting_date=${encodeURIComponent(plantingDate)}&duration=${encodeURIComponent(duration)}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) return;
+        document.getElementById('previewCropName').textContent = data.crop_name;
+        document.getElementById('previewDuration').textContent = `${data.total_duration_days} days`;
+        document.getElementById('previewHarvestDate').textContent = data.estimated_harvest_date;
+
+        const list = document.getElementById('previewMilestonesList');
+        list.innerHTML = '';
+        data.milestones.forEach(m => {
+          const item = document.createElement('div');
+          item.className = 'list-group-item px-0 py-2 border-bottom';
+          item.innerHTML = `
+            <div class="d-flex justify-content-between">
+              <strong>${m.order}. ${m.name}</strong>
+              <span class="text-muted">${m.start_date}</span>
+            </div>
+            <div class="text-muted" style="font-size: 0.8rem;">${m.description}</div>
+          `;
+          list.appendChild(item);
+        });
+      })
+      .catch(err => console.log('Preview error:', err));
+  }
+
+  // Trigger initial preview
+  fetchPreview();
+});
+</script>
+{% endblock %}

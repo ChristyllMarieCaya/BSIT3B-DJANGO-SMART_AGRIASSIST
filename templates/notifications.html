@@ -1,0 +1,403 @@
+{% extends "theme/base.html" %}
+{% block title %}Notifications — SMART AGRIASSIST{% endblock %}
+
+{% block content %}
+<div class="container-xl" id="notificationsPage"
+     data-api-url="{% url 'notifications_api' %}"
+     data-initial-status="{{ status_filter|default:'all' }}"
+     data-initial-category="{{ category_filter }}">
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Notifications</div>
+        <h2 class="page-title mb-1">Agricultural Notifications</h2>
+        <p class="text-muted mb-0">Weather alerts, crop care reminders, and advisories for your farm.</p>
+      </div>
+      <div class="col-auto">
+        <span class="badge bg-success-lt text-success" id="unreadCount" aria-live="polite">
+          <i class="fa-solid fa-circle-check me-1" aria-hidden="true"></i>
+          <span>{{ unread_count }}</span> unread
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <form class="d-none" aria-hidden="true">{% csrf_token %}</form>
+  <div id="notificationToast" class="alert d-none" role="status" aria-live="polite"></div>
+
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="row g-0">
+        <div class="col-12 col-md-3 border-end">
+          <div class="p-3">
+            <span class="form-label small text-muted d-block mb-2">Status</span>
+            <div class="d-flex flex-column align-items-start gap-1" role="group" aria-label="Filter by read status">
+              <button type="button" class="btn btn-ghost-secondary btn-sm status-filter" data-status="all">All</button>
+              <button type="button" class="btn btn-ghost-secondary btn-sm status-filter" data-status="unread">Unread only</button>
+              <button type="button" class="btn btn-ghost-secondary btn-sm status-filter" data-status="read">Read only</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-9">
+          <div class="p-3">
+            <span class="form-label small text-muted d-block mb-2">Category</span>
+            <div class="d-flex flex-wrap gap-2" role="group" aria-label="Filter by notification category">
+              <button type="button" class="btn btn-ghost-secondary btn-sm category-filter" data-category="">All</button>
+              {% for cat_value, cat_label in categories %}
+              <button type="button" class="btn btn-ghost-secondary btn-sm category-filter" data-category="{{ cat_value }}">{{ cat_label }}</button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="border-top p-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-5">
+            <label for="notificationSearch" class="form-label small text-muted">Search</label>
+            <input id="notificationSearch" type="search" class="form-control form-control-sm" placeholder="Search title or message">
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="notificationPriority" class="form-label small text-muted">Priority</label>
+            <select id="notificationPriority" class="form-select form-select-sm">
+              <option value="">All priorities</option>
+              {% for value, label in priority_choices %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label for="notificationOrdering" class="form-label small text-muted">Sort</label>
+            <select id="notificationOrdering" class="form-select form-select-sm">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-2 d-flex gap-2">
+            <button type="button" id="markAllRead" class="btn btn-outline-success btn-sm flex-fill">Mark all read</button>
+            <button type="button" id="clearRead" class="btn btn-outline-danger btn-sm flex-fill">Clear read</button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <small class="text-muted" id="notificationTotal" aria-live="polite"></small>
+          <button type="button" id="deleteSelected" class="btn btn-outline-danger btn-sm" disabled>
+            Delete selected <span id="selectedCount">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notificationError" class="alert alert-danger d-none" role="alert">
+    <span>Notifications could not be loaded.</span>
+    <button type="button" id="retryNotifications" class="btn btn-sm btn-outline-danger ms-2">Retry</button>
+  </div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="list-group list-group-flush" id="notificationList" aria-live="polite" aria-busy="true"></div>
+      <div class="text-center p-5 d-none" id="notificationEmpty">
+        <i class="fa-solid fa-bell-slash fa-3x text-muted mb-3" aria-hidden="true"></i>
+        <p class="empty-title mb-1" id="notificationEmptyTitle">No notifications</p>
+        <p class="empty-subtitle text-muted mb-0" id="notificationEmptyMessage">Notifications from your farm will appear here.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var page = document.getElementById('notificationsPage');
+  var apiUrl = page.dataset.apiUrl;
+  var csrfInput = document.querySelector('#notificationsPage [name=csrfmiddlewaretoken]');
+  var csrfToken = csrfInput ? csrfInput.value : '';
+  var list = document.getElementById('notificationList');
+  var empty = document.getElementById('notificationEmpty');
+  var errorPanel = document.getElementById('notificationError');
+  var toast = document.getElementById('notificationToast');
+  var selectedIds = new Set();
+  var status = ['all', 'unread', 'read'].indexOf(page.dataset.initialStatus) >= 0
+    ? page.dataset.initialStatus : 'all';
+  var category = page.dataset.initialCategory || '';
+  var refreshTimer;
+  var loadGeneration = 0;
+
+  function showToast(message, isError) {
+    toast.textContent = message;
+    toast.className = 'alert ' + (isError ? 'alert-danger' : 'alert-success');
+    window.setTimeout(function () { toast.classList.add('d-none'); }, 3500);
+  }
+
+  function updateUnreadCount(count) {
+    var countNode = document.querySelector('#unreadCount span');
+    if (countNode) countNode.textContent = count;
+    var badge = document.querySelector('[data-notification-unread]');
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('d-none', count === 0);
+    }
+  }
+
+  function updateFilterButtons() {
+    document.querySelectorAll('.status-filter').forEach(function (button) {
+      var active = button.dataset.status === status;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    document.querySelectorAll('.category-filter').forEach(function (button) {
+      var active = button.dataset.category === category;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function updateSelection() {
+    var selectedCount = selectedIds.size;
+    document.getElementById('selectedCount').textContent = selectedCount;
+    document.getElementById('deleteSelected').disabled = selectedCount === 0;
+  }
+
+  function makeButton(label, iconClass, action, id, iconColor) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-ghost-secondary btn-sm';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.dataset.action = action;
+    button.dataset.id = id;
+    var icon = document.createElement('i');
+    icon.className = iconClass + ' ' + iconColor;
+    icon.setAttribute('aria-hidden', 'true');
+    button.appendChild(icon);
+    return button;
+  }
+
+  function renderNotifications(notifications, totalCount) {
+    list.replaceChildren();
+    selectedIds.clear();
+    updateSelection();
+    document.getElementById('notificationTotal').textContent =
+      totalCount + (totalCount === 1 ? ' notification' : ' notifications');
+
+    notifications.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'list-group-item border-bottom d-flex align-items-start gap-3 ' +
+        (item.read ? '' : 'bg-success-lt');
+      row.dataset.id = item.id;
+      row.dataset.read = item.read ? 'true' : 'false';
+
+      var selectLabel = document.createElement('label');
+      selectLabel.className = 'form-check m-0 pt-1';
+      selectLabel.title = 'Select notification';
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'form-check-input notification-select';
+      checkbox.setAttribute('aria-label', 'Select ' + item.title);
+      checkbox.addEventListener('change', function () {
+        if (this.checked) selectedIds.add(String(item.id));
+        else selectedIds.delete(String(item.id));
+        updateSelection();
+      });
+      selectLabel.appendChild(checkbox);
+      row.appendChild(selectLabel);
+
+      var priority = document.createElement('span');
+      priority.className = 'badge flex-shrink-0 ' + ({
+        low: 'bg-secondary-lt text-secondary',
+        normal: 'bg-success-lt text-success',
+        high: 'bg-warning-lt text-warning',
+        critical: 'bg-danger-lt text-danger',
+        urgent: 'bg-danger-lt text-danger'
+      }[item.priority] || 'bg-secondary-lt text-secondary');
+      priority.textContent = item.priority_label;
+      row.appendChild(priority);
+
+      var content = document.createElement('div');
+      content.className = 'flex-grow-1 min-w-0';
+      var heading = document.createElement('div');
+      heading.className = 'd-flex justify-content-between align-items-start gap-2 mb-1';
+      var title = document.createElement('h6');
+      title.className = 'mb-0 fw-semibold';
+      title.textContent = item.title;
+      heading.appendChild(title);
+      var categoryBadge = document.createElement('span');
+      categoryBadge.className = 'badge bg-secondary-lt text-secondary flex-shrink-0';
+      categoryBadge.textContent = item.category_label;
+      heading.appendChild(categoryBadge);
+      content.appendChild(heading);
+
+      var message = document.createElement('p');
+      message.className = 'mb-1 text-muted small';
+      message.textContent = item.message;
+      content.appendChild(message);
+      var footer = document.createElement('div');
+      footer.className = 'd-flex justify-content-between align-items-center gap-2';
+      var timestamp = document.createElement('small');
+      timestamp.className = 'text-muted';
+      timestamp.textContent = new Date(item.created_at).toLocaleString();
+      footer.appendChild(timestamp);
+
+      var actions = document.createElement('div');
+      actions.className = 'd-flex gap-1 flex-shrink-0';
+      if (item.related_url) {
+        var details = document.createElement('a');
+        details.href = item.related_url;
+        details.className = 'btn btn-ghost-secondary btn-sm';
+        details.title = 'View details';
+        details.setAttribute('aria-label', 'View details for ' + item.title);
+        details.innerHTML = '<i class="fa-solid fa-arrow-right text-agri" aria-hidden="true"></i>';
+        actions.appendChild(details);
+      }
+      actions.appendChild(item.read
+        ? makeButton('Mark as unread', 'fa-solid fa-circle', 'mark_unread', item.id, 'text-muted')
+        : makeButton('Mark as read', 'fa-solid fa-circle-check', 'mark_read', item.id, 'text-success'));
+      actions.appendChild(makeButton('Delete notification', 'fa-solid fa-trash', 'delete', item.id, 'text-danger'));
+      footer.appendChild(actions);
+      content.appendChild(footer);
+      row.appendChild(content);
+      list.appendChild(row);
+    });
+
+    var isEmpty = notifications.length === 0;
+    empty.classList.toggle('d-none', !isEmpty);
+    list.classList.toggle('d-none', isEmpty);
+    if (isEmpty) {
+      document.getElementById('notificationEmptyTitle').textContent =
+        totalCount === 0 ? 'No notifications' : 'No matching notifications';
+      document.getElementById('notificationEmptyMessage').textContent =
+        totalCount === 0
+          ? 'Notifications from your farm will appear here.'
+          : 'Try changing the status, category, priority, or search filters.';
+    }
+  }
+
+  function loadNotifications(showError) {
+    var generation = ++loadGeneration;
+    var params = new URLSearchParams({
+      status: status,
+      category: category,
+      search: document.getElementById('notificationSearch').value.trim(),
+      priority: document.getElementById('notificationPriority').value,
+      ordering: document.getElementById('notificationOrdering').value
+    });
+    list.setAttribute('aria-busy', 'true');
+    return fetch(apiUrl + '?' + params.toString(), {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Unable to load notifications (' + response.status + ').');
+      return response.json();
+    }).then(function (data) {
+      if (generation !== loadGeneration) return;
+      errorPanel.classList.add('d-none');
+      renderNotifications(data.notifications, data.total_count);
+      updateUnreadCount(data.unread_count);
+      updateFilterButtons();
+      history.replaceState(null, '', '?' + params.toString());
+    }).catch(function (error) {
+      if (generation === loadGeneration && showError !== false) {
+        errorPanel.querySelector('span').textContent = error.message || 'Notifications could not be loaded.';
+        errorPanel.classList.remove('d-none');
+      }
+    }).finally(function () {
+      if (generation === loadGeneration) list.setAttribute('aria-busy', 'false');
+    });
+  }
+
+  function postAction(action, values) {
+    var body = new URLSearchParams({ action: action });
+    Object.keys(values || {}).forEach(function (key) {
+      if (Array.isArray(values[key])) {
+        values[key].forEach(function (value) { body.append(key, value); });
+      } else {
+        body.append(key, values[key]);
+      }
+    });
+    return fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'Accept': 'application/json'
+      },
+      body: body.toString(),
+      credentials: 'same-origin'
+    }).then(function (response) {
+      return response.json().then(function (data) {
+        if (!response.ok || data.status !== 'ok') {
+          throw new Error(data.error || 'The notification action failed.');
+        }
+        return data;
+      });
+    });
+  }
+
+  list.addEventListener('click', function (event) {
+    var button = event.target.closest('button[data-action]');
+    if (!button || button.disabled) return;
+    var action = button.dataset.action;
+    if (action === 'delete' && !window.confirm('Are you sure you want to delete this notification?')) return;
+    button.disabled = true;
+    postAction(action, { notification_id: button.dataset.id }).then(function () {
+      showToast(action === 'mark_read' ? 'Notification marked as read.'
+        : action === 'mark_unread' ? 'Notification marked as unread.'
+        : 'Notification deleted successfully.', false);
+      return loadNotifications(false);
+    }).catch(function (error) {
+      button.disabled = false;
+      showToast(error.message, true);
+      loadNotifications(false);
+    });
+  });
+
+  document.querySelectorAll('.status-filter').forEach(function (button) {
+    button.addEventListener('click', function () {
+      status = this.dataset.status;
+      loadNotifications();
+    });
+  });
+  document.querySelectorAll('.category-filter').forEach(function (button) {
+    button.addEventListener('click', function () {
+      category = this.dataset.category;
+      loadNotifications();
+    });
+  });
+
+  var searchTimer;
+  document.getElementById('notificationSearch').addEventListener('input', function () {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(function () { loadNotifications(); }, 250);
+  });
+  document.getElementById('notificationPriority').addEventListener('change', function () { loadNotifications(); });
+  document.getElementById('notificationOrdering').addEventListener('change', function () { loadNotifications(); });
+  document.getElementById('retryNotifications').addEventListener('click', function () { loadNotifications(); });
+
+  document.getElementById('markAllRead').addEventListener('click', function () {
+    postAction('mark_all_read').then(function () {
+      showToast('All notifications marked as read.', false);
+      return loadNotifications(false);
+    }).catch(function (error) { showToast(error.message, true); });
+  });
+  document.getElementById('clearRead').addEventListener('click', function () {
+    if (!window.confirm('Are you sure you want to delete all read notifications?')) return;
+    postAction('delete_read').then(function () {
+      showToast('Read notifications cleared.', false);
+      return loadNotifications(false);
+    }).catch(function (error) { showToast(error.message, true); });
+  });
+  document.getElementById('deleteSelected').addEventListener('click', function () {
+    var ids = Array.from(selectedIds);
+    if (!ids.length || !window.confirm('Are you sure you want to delete the selected notifications?')) return;
+    postAction('delete_selected', { notification_ids: ids }).then(function () {
+      showToast('Selected notifications deleted.', false);
+      return loadNotifications(false);
+    }).catch(function (error) { showToast(error.message, true); });
+  });
+
+  updateFilterButtons();
+  loadNotifications();
+  refreshTimer = window.setInterval(function () { loadNotifications(false); }, 45000);
+  window.addEventListener('beforeunload', function () { window.clearInterval(refreshTimer); });
+})();
+</script>
+{% endblock %}

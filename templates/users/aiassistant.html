@@ -1,0 +1,619 @@
+{% extends "theme/base.html" %}
+{% block title %}Agri AI Assistant — SMART AGRIASSIST{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <!-- Page header -->
+  <div class="page-header d-print-none mb-3" aria-label="Page header">
+    <div class="row align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Intelligent Agronomy</div>
+        <h2 class="page-title mb-1">Agri AI Assistant</h2>
+        <p class="text-muted mb-0">Ask natural farming questions, attach crop leaf photos for disease diagnosis, and get stage-specific recommendations.</p>
+      </div>
+      <div class="col-auto d-flex gap-2 align-items-center">
+        <!-- New Conversation button -->
+        <button type="button" class="btn btn-outline-success" id="newConvBtn" title="Start a fresh chat conversation">
+          <i class="fa-solid fa-plus me-1"></i> New Conversation
+        </button>
+        <!-- Clear Conversation button -->
+        <button type="button" class="btn btn-ghost-danger" id="clearConvBtn" title="Clear current messages">
+          <i class="fa-solid fa-trash-can me-1"></i> Clear
+        </button>
+        <span class="badge bg-secondary-lt text-secondary" id="aiAvailabilityBadge">
+          <i class="fa-solid fa-circle-notch fa-spin me-1" id="aiAvailabilityIcon" aria-hidden="true"></i>
+          <span id="aiAvailabilityLabel">Checking connection</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% if not ai_available %}
+  <div class="alert alert-warning mb-3" role="alert">
+    <i class="fa-solid fa-triangle-exclamation alert-icon me-2" aria-hidden="true"></i>
+    <div>
+      <h4 class="alert-heading mb-1">AI Assistant Configuration Notice</h4>
+      <div class="alert-description">
+        <code>GEMINI_API_KEY</code> is not yet configured on the server. Set the key in <code>.env</code> to activate live Google Gemini vision analysis.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick suggested agricultural questions -->
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body py-2 px-3">
+      <div class="small fw-semibold text-muted mb-2">
+        <i class="fa-regular fa-lightbulb text-warning me-1"></i> Suggested Farming &amp; Disease Questions:
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm quick-question" data-question="What disease is affecting my rice plants?">
+          🌾 Rice leaf diseases
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm quick-question" data-question="Why are the leaves of my tomato plant turning yellow?">
+          🍅 Tomato yellowing leaves
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm quick-question" data-question="What fertilizer is appropriate for my crop and its current growth stage?">
+          🧪 Stage-specific fertilizer
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm quick-question" data-question="Should I water or spray my crops today based on current weather?">
+          💧 Watering &amp; spraying decision
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm quick-question" data-question="Is there a storm or heavy rain approaching my registered farm?">
+          🌧️ Upcoming severe weather risk
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm quick-question" data-question="How many days until my active crops are ready for harvest?">
+          📅 Harvest countdown
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Past Conversations Drawer / Sidebar -->
+    <div class="col-md-3 d-none d-md-block">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-2 px-3">
+          <span class="small fw-bold text-muted">Conversation History</span>
+          <button type="button" class="btn btn-ghost-secondary btn-sm p-1" id="refreshConversationsBtn" title="Refresh history">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+        <div class="card-body p-0" style="max-height: 520px; overflow-y: auto;">
+          <div class="list-group list-group-flush small" id="conversationsList">
+            <div class="p-3 text-center text-muted small">Loading conversations...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Chat Window -->
+    <div class="col-12 col-md-9">
+      <div class="card border-0 shadow-sm chat-interface" style="height: 580px;">
+        <div class="chat-header">
+          <div class="chat-title">
+            <div class="d-flex align-items-center gap-2">
+              <span class="stat-card-icon stat-card-icon-assistant p-2">
+                <i class="fa-solid fa-robot fa-lg"></i>
+              </span>
+              <div>
+                <h5 class="mb-0 fw-bold">SMART Agricultural Assistant</h5>
+                <p class="small text-muted mb-0">Multi-turn crop consultation with live farm records &amp; weather awareness</p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-status">
+            <span class="chat-status-dot text-muted" id="aiStatusDot"></span>
+            <span id="aiStatusText" aria-live="polite" class="small">{{ ai_status_text }}</span>
+          </div>
+        </div>
+
+        <div class="chat-window flex-grow-1" style="overflow-y: auto;">
+          <div class="chat-messages p-3" id="chatMessages">
+            <div class="chat-bubble bubble-assistant">
+              Hello {{ user.first_name|default:user.username }}! I am your SMART Agricultural Assistant.
+              I have loaded your active crops, current growth stages, and farm weather.
+              How can I help with your field today? You can also upload a photo of leaves, stems, or pests for automated disease identification.
+              <span class="chat-meta">Just now</span>
+            </div>
+          </div>
+          <div class="chat-typing d-none p-2" id="chatTyping" aria-live="polite">
+            <span></span><span></span><span></span>
+            <span class="visually-hidden">Agri AI is diagnosing...</span>
+          </div>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="chat-form p-2 border-top">
+          {% csrf_token %}
+          <input
+            type="text"
+            id="chatInput"
+            class="form-control"
+            placeholder="Ask anything or attach a crop photo for diagnosis..."
+            autocomplete="off"
+            {% if not ai_available %}disabled{% endif %}
+          />
+          <label class="btn btn-ghost-secondary btn-icon btn-sm" id="chatAttach" title="Attach crop photo" {% if not ai_available %}disabled{% endif %}>
+            <input type="file" id="chatImageFile" accept="image/jpeg,image/png,image/webp" class="d-none">
+            <i class="fa-solid fa-image"></i>
+          </label>
+          <label class="btn btn-ghost-secondary btn-icon btn-sm" id="chatCamera" title="Capture photo with camera" {% if not ai_available %}disabled{% endif %}>
+            <i class="fa-solid fa-camera"></i>
+          </label>
+          <button type="button" class="btn btn-chat-send" id="chatSend" title="Send Question" {% if not ai_available %}disabled{% endif %}>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+
+        <!-- Image preview -->
+        <div id="chatImagePreview" class="d-none p-2 border-top bg-light d-flex align-items-center gap-2">
+          <img id="chatImagePreviewThumb" src="" alt="Attached photo" style="max-width: 70px; max-height: 70px; object-fit: cover; border-radius: 0.5rem;">
+          <div class="flex-grow-1 small text-muted text-truncate" id="chatImagePreviewName">photo.jpg</div>
+          <button type="button" class="btn btn-ghost-secondary btn-sm" id="chatImageRemove" title="Remove attached photo">
+            <i class="fa-solid fa-times text-danger"></i>
+          </button>
+        </div>
+
+        <!-- Camera modal -->
+        <div class="modal fade" id="chatCameraModal" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-camera me-2"></i> Take Crop / Leaf Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body text-center">
+                <video id="chatCameraVideo" autoplay playsinline style="width: 100%; max-width: 480px; border-radius: 0.75rem; background: #000;"></video>
+                <canvas id="chatCameraCanvas" style="display: none;"></canvas>
+                <div class="mt-3 d-flex gap-2 justify-content-center">
+                  <button type="button" class="btn btn-outline-secondary" id="chatCameraStart">Start Camera</button>
+                  <button type="button" class="btn btn-success" id="chatCameraCapture" disabled>Capture</button>
+                  <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+                <div class="mt-2 form-hint" id="chatCameraStatus">Click Start to enable camera stream.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var input = document.getElementById('chatInput');
+  var sendBtn = document.getElementById('chatSend');
+  var messages = document.getElementById('chatMessages');
+  var typing = document.getElementById('chatTyping');
+  var currentConversationId = null;
+  var isSending = false;
+  var aiAvailable = {{ ai_available|lower }};
+
+  var conversationsList = document.getElementById('conversationsList');
+  var refreshConversationsBtn = document.getElementById('refreshConversationsBtn');
+  var newConvBtn = document.getElementById('newConvBtn');
+  var clearConvBtn = document.getElementById('clearConvBtn');
+
+  // Image upload state
+  var imageFileInput = document.getElementById('chatImageFile');
+  var imagePreview = document.getElementById('chatImagePreview');
+  var imagePreviewThumb = document.getElementById('chatImagePreviewThumb');
+  var imagePreviewName = document.getElementById('chatImagePreviewName');
+  var imageRemoveBtn = document.getElementById('chatImageRemove');
+  var selectedImageFile = null;
+  var selectedImageUrl = null;
+
+  // Camera state
+  var cameraModal = new bootstrap.Modal(document.getElementById('chatCameraModal'));
+  var cameraVideo = document.getElementById('chatCameraVideo');
+  var cameraCanvas = document.getElementById('chatCameraCanvas');
+  var cameraStartBtn = document.getElementById('chatCameraStart');
+  var cameraCaptureBtn = document.getElementById('chatCameraCapture');
+  var cameraStatus = document.getElementById('chatCameraStatus');
+  var cameraStream = null;
+
+  function scrollBottom() {
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function formatMessageText(text) {
+    if (!text) return '';
+    // Basic Markdown formatting for bullet points and bold headers
+    var escaped = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    // Bold
+    escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Bullets
+    escaped = escaped.replace(/^[\s]*[•\-\*][\s]+(.*)$/gm, '<li class="ms-3">$1</li>');
+    // Paragraph breaks
+    escaped = escaped.replace(/\n\n/g, '<br><br>');
+    escaped = escaped.replace(/\n/g, '<br>');
+    return escaped;
+  }
+
+  function addBubble(text, type, imageUrl, hasDiagnosis) {
+    var div = document.createElement('div');
+    div.className = 'chat-bubble bubble-' + type;
+    var meta = document.createElement('span');
+    meta.className = 'chat-meta';
+    var now = new Date();
+    meta.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (imageUrl) {
+      var img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = 'Uploaded crop photo';
+      img.style.maxWidth = '240px';
+      img.style.maxHeight = '240px';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '0.75rem';
+      img.style.display = 'block';
+      img.style.marginBottom = '0.5rem';
+      div.appendChild(img);
+    }
+
+    if (text) {
+      var contentDiv = document.createElement('div');
+      contentDiv.innerHTML = formatMessageText(text);
+      div.appendChild(contentDiv);
+    }
+
+    if (hasDiagnosis) {
+      var diagLink = document.createElement('a');
+      diagLink.href = '{% url "diagnoses_list" %}';
+      diagLink.className = 'btn btn-sm btn-outline-success mt-2 d-inline-block';
+      diagLink.innerHTML = '<i class="fa-solid fa-notes-medical me-1"></i> View Saved Diagnosis Record';
+      div.appendChild(diagLink);
+    }
+
+    div.appendChild(meta);
+    messages.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  function showTyping(show) {
+    typing.classList.toggle('d-none', !show);
+    if (show) scrollBottom();
+  }
+
+  function updateSendButton() {
+    var hasContent = input.value.trim().length > 0 || selectedImageFile !== null;
+    sendBtn.disabled = (!aiAvailable) || !hasContent || isSending;
+  }
+
+  function setAiStatus(state, message) {
+    var statusText = document.getElementById('aiStatusText');
+    var statusDot = document.getElementById('aiStatusDot');
+    var badge = document.getElementById('aiAvailabilityBadge');
+    var badgeLabel = document.getElementById('aiAvailabilityLabel');
+    var badgeIcon = document.getElementById('aiAvailabilityIcon');
+    var labels = {
+      checking: 'Checking connection...',
+      connected: 'Connected & Ready',
+      temporarily_unavailable: 'Temporarily unavailable',
+      rate_limited: 'Rate limited',
+      configuration_error: 'Configuration error'
+    };
+    if (statusText) statusText.textContent = message || labels[state] || labels.temporarily_unavailable;
+    if (statusDot) {
+      statusDot.className = 'chat-status-dot ' +
+        (state === 'connected' ? 'text-success'
+          : state === 'temporarily_unavailable' ? 'text-warning' : 'text-muted');
+    }
+    if (badge) {
+      badge.className = 'badge ' +
+        (state === 'connected' ? 'bg-success-lt text-success'
+          : state === 'configuration_error' ? 'bg-danger-lt text-danger'
+          : 'bg-warning-lt text-warning');
+      badgeIcon.className = 'me-1 ' +
+        (state === 'connected' ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation');
+      badgeLabel.textContent = labels[state] || labels.temporarily_unavailable;
+    }
+    if (state === 'connected') aiAvailable = true;
+    if (state === 'configuration_error') aiAvailable = false;
+    updateSendButton();
+  }
+
+  function refreshAiStatus() {
+    setAiStatus('checking');
+    fetch('{% url "gemini_status" %}', { credentials: 'same-origin' })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok && !data.state) throw new Error('Status check failed');
+          return data;
+        });
+      })
+      .then(function (data) { setAiStatus(data.state, data.message); })
+      .catch(function () {
+        setAiStatus('temporarily_unavailable', 'Gemini is temporarily unavailable.');
+      });
+  }
+
+  function clearImageSelection() {
+    selectedImageFile = null;
+    selectedImageUrl = null;
+    imageFileInput.value = '';
+    imagePreview.classList.add('d-none');
+    imagePreviewThumb.src = '';
+    imagePreviewName.textContent = '';
+    updateSendButton();
+  }
+
+  // Quick Questions
+  document.querySelectorAll('.quick-question').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      input.value = this.dataset.question;
+      updateSendButton();
+      sendMessage();
+    });
+  });
+
+  // Load conversations
+  function loadConversations() {
+    fetch('{% url "chat_conversations" %}')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (!conversationsList) return;
+        conversationsList.innerHTML = '';
+        if (!data.conversations || data.conversations.length === 0) {
+          conversationsList.innerHTML = '<div class="p-3 text-center text-muted small">No past chats</div>';
+          return;
+        }
+        data.conversations.forEach(function(c) {
+          var item = document.createElement('a');
+          item.href = '#';
+          item.className = 'list-group-item list-group-item-action py-2 px-3 ' + (c.id === currentConversationId ? 'active' : '');
+          var dt = new Date(c.started_at).toLocaleDateString([], { month: 'short', day: 'numeric' });
+          item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <strong class="text-truncate">Chat #${c.id}</strong>
+              <span class="small text-muted">${dt}</span>
+            </div>
+            <div class="small text-muted">${c.message_count} messages</div>
+          `;
+          item.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchConversation(c.id);
+          });
+          conversationsList.appendChild(item);
+        });
+      });
+  }
+
+  function switchConversation(convId) {
+    currentConversationId = convId;
+    fetch(`/chat/conversations/${convId}/messages/`)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        messages.innerHTML = '';
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(function(m) {
+            var type = m.sender ? 'user' : 'assistant';
+            addBubble(m.body, type, m.image_url);
+          });
+        } else {
+          addBubble('Conversation opened. Ask any agricultural question or send a plant photo.', 'assistant');
+        }
+        loadConversations();
+      });
+  }
+
+  // New Conversation Button
+  newConvBtn.addEventListener('click', function() {
+    fetch('{% url "chat_new_conversation" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.conversation_id) {
+        currentConversationId = data.conversation_id;
+        messages.innerHTML = '';
+        addBubble('Started a new conversation. What farming question would you like to explore?', 'assistant');
+        loadConversations();
+      }
+    });
+  });
+
+  // Clear Conversation Button
+  clearConvBtn.addEventListener('click', function() {
+    if (!currentConversationId) {
+      messages.innerHTML = '';
+      addBubble('Chat cleared. What can I help you with today?', 'assistant');
+      return;
+    }
+    if (!confirm('Clear all messages in this conversation?')) return;
+    fetch(`/chat/conversations/${currentConversationId}/clear/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+    .then(function() {
+      messages.innerHTML = '';
+      addBubble('Chat cleared. Ready for your next farming question.', 'assistant');
+      loadConversations();
+    });
+  });
+
+  if (refreshConversationsBtn) {
+    refreshConversationsBtn.addEventListener('click', loadConversations);
+  }
+
+  // File upload handlers
+  imageFileInput.addEventListener('change', function () {
+    var file = this.files[0];
+    if (!file) return;
+    selectedImageFile = file;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      selectedImageUrl = e.target.result;
+      imagePreviewThumb.src = e.target.result;
+      imagePreviewName.textContent = file.name;
+      imagePreview.classList.remove('d-none');
+    };
+    reader.readAsDataURL(file);
+    updateSendButton();
+  });
+
+  imageRemoveBtn.addEventListener('click', clearImageSelection);
+
+  // Camera capture handlers
+  cameraStartBtn.addEventListener('click', function () {
+    cameraStatus.textContent = 'Requesting camera access...';
+    cameraStartBtn.disabled = true;
+    cameraCaptureBtn.disabled = true;
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function (stream) {
+        cameraStream = stream;
+        cameraVideo.srcObject = stream;
+        cameraStatus.textContent = 'Camera ready. Position the crop leaf or stem and click Capture.';
+        cameraCaptureBtn.disabled = false;
+      })
+      .catch(function (err) {
+        cameraStatus.textContent = 'Camera unavailable: ' + err.message;
+        cameraStartBtn.disabled = false;
+      });
+  });
+
+  cameraCaptureBtn.addEventListener('click', function () {
+    cameraCanvas.width = cameraVideo.videoWidth;
+    cameraCanvas.height = cameraVideo.videoHeight;
+    var ctx = cameraCanvas.getContext('2d');
+    ctx.drawImage(cameraVideo, 0, 0);
+    var dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.85);
+
+    fetch(dataUrl)
+      .then(function (res) { return res.blob(); })
+      .then(function (blob) {
+        var file = new File([blob], 'crop_photo.jpg', { type: 'image/jpeg' });
+        selectedImageFile = file;
+        selectedImageUrl = dataUrl;
+        imagePreviewThumb.src = dataUrl;
+        imagePreviewName.textContent = 'crop_photo.jpg';
+        imagePreview.classList.remove('d-none');
+        cameraModal.hide();
+        updateSendButton();
+      });
+
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function (track) { track.stop(); });
+      cameraStream = null;
+    }
+  });
+
+  document.getElementById('chatCameraModal').addEventListener('hidden.bs.modal', function () {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function (track) { track.stop(); });
+      cameraStream = null;
+    }
+    cameraStartBtn.disabled = false;
+    cameraCaptureBtn.disabled = true;
+    cameraStatus.textContent = 'Click Start to enable the camera.';
+  });
+
+  document.getElementById('chatAttach').addEventListener('click', function (e) {
+    if (!aiAvailable) { e.preventDefault(); return; }
+    imageFileInput.click();
+  });
+
+  document.getElementById('chatCamera').addEventListener('click', function (e) {
+    if (!aiAvailable) { e.preventDefault(); return; }
+    cameraModal.show();
+  });
+
+  function sendMessage() {
+    if (isSending) return;
+    var text = input.value.trim();
+    if (!text && !selectedImageFile) return;
+    if (!text) text = '[Crop photo attached for diagnosis]';
+
+    var curFile = selectedImageFile;
+    var curUrl = selectedImageUrl;
+    input.value = '';
+    clearImageSelection();
+
+    addBubble(text, 'user', curUrl);
+    showTyping(true);
+    isSending = true;
+    updateSendButton();
+
+    var formData = new FormData();
+    formData.append('message', text);
+    if (currentConversationId) {
+      formData.append('conversation_id', currentConversationId);
+    }
+    if (curFile) {
+      formData.append('image', curFile);
+    }
+
+    fetch('{% url "chat" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      },
+      body: formData
+    })
+    .then(function (resp) {
+      return resp.json().then(function (data) {
+        if (!resp.ok) {
+          throw new Error(data.error || 'The assistant request failed.');
+        }
+        return data;
+      });
+    })
+    .then(function (data) {
+      showTyping(false);
+      if (data.reply) {
+        if (data.conversation_id) {
+          currentConversationId = data.conversation_id;
+        }
+        addBubble(data.reply, 'assistant', null, data.has_image || data.has_diagnosis);
+        loadConversations();
+      } else if (data.error) {
+        addBubble('Error: ' + data.error, 'assistant');
+      }
+    })
+    .catch(function (error) {
+      showTyping(false);
+      addBubble('Connection issue: ' + error.message, 'assistant');
+    })
+    .finally(function () {
+      isSending = false;
+      updateSendButton();
+    });
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('input', updateSendButton);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Check URL param for conv
+  var urlParams = new URLSearchParams(window.location.search);
+  var convParam = urlParams.get('conv');
+  if (convParam) {
+    switchConversation(convParam);
+  } else {
+    loadConversations();
+  }
+
+  refreshAiStatus();
+  updateSendButton();
+  scrollBottom();
+})();
+</script>
+{% endblock %}
