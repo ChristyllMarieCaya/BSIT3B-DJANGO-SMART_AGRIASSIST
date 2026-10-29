@@ -1,0 +1,2316 @@
+/* ==========================================================================
+   SMART AGRIASSIST — Modern Dual-Theme (Light & Dark) Admin Design System
+   Matches Smart AgriAssist User Interface & Tabler System
+   ========================================================================== */
+
+:root,
+[data-bs-theme="light"] {
+  color-scheme: light;
+
+  /* Light Theme (matches User Dashboard Light mode) */
+  --agri-bg-primary: #f7faf8;
+  --agri-sidebar-bg: #ffffff;
+  --agri-topbar-bg: #ffffff;
+  --agri-card-bg: #ffffff;
+  --agri-card-secondary: #f1f5f2;
+  --agri-card-hover: #f8faf9;
+
+  --agri-accent: #15803d;
+  --agri-accent-hover: #166534;
+  --agri-accent-subtle: #f0fdf4;
+  --agri-accent-border: #bbf7d0;
+
+  --agri-mint: #15803d;
+  --agri-mint-subtle: #ecfdf5;
+
+  --agri-text: #1f2937;
+  --agri-text-muted: #6b7280;
+  --agri-text-dim: #9ca3af;
+
+  --agri-border: #dce7e2;
+  --agri-border-subtle: rgba(21, 128, 61, 0.1);
+  --agri-border-focus: #15803d;
+
+  --agri-card-shadow: 0 1px 3px rgba(21, 128, 61, 0.06), 0 4px 12px -6px rgba(21, 128, 61, 0.08);
+  --agri-card-shadow-hover: 0 4px 14px rgba(21, 128, 61, 0.12);
+
+  --agri-table-header: #f8faf8;
+  --agri-input-bg: #ffffff;
+  --agri-input-border: #dce7e2;
+  --agri-badge-bg: #f0fdf4;
+  --agri-badge-text: #14532d;
+
+  --agri-danger: #dc2626;
+  --agri-danger-bg: #fef2f2;
+  --agri-warning: #d97706;
+  --agri-warning-bg: #fffbeb;
+  --agri-info: #0ea5e9;
+  --agri-info-bg: #f0f9ff;
+
+  --tblr-font-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --tblr-body-bg: var(--agri-bg-primary);
+  --tblr-body-color: var(--agri-text);
+}
+
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  /* Dark Theme (matches User Dashboard Dark Green mode) */
+  --agri-bg-primary: #0a140d;
+  --agri-sidebar-bg: #0c1a11;
+  --agri-topbar-bg: #0c1a11;
+  --agri-card-bg: #122418;
+  --agri-card-secondary: #162c1e;
+  --agri-card-hover: #193322;
+
+  --agri-accent: #22c55e;
+  --agri-accent-hover: #16a34a;
+  --agri-accent-subtle: rgba(34, 197, 94, 0.12);
+  --agri-accent-border: rgba(34, 197, 94, 0.25);
+
+  --agri-mint: #86efac;
+  --agri-mint-subtle: rgba(134, 239, 172, 0.15);
+
+  --agri-text: #f0fdf4;
+  --agri-text-muted: #94a399;
+  --agri-text-dim: #6b7f72;
+
+  --agri-border: #1e3b27;
+  --agri-border-subtle: rgba(30, 59, 39, 0.6);
+  --agri-border-focus: #22c55e;
+
+  --agri-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --agri-card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  --agri-table-header: #162c1e;
+  --agri-input-bg: #0a140d;
+  --agri-input-border: #1e3b27;
+  --agri-badge-bg: rgba(34, 197, 94, 0.16);
+  --agri-badge-text: #4ade80;
+
+  --agri-danger: #ef4444;
+  --agri-danger-bg: rgba(239, 68, 68, 0.15);
+  --agri-warning: #f59e0b;
+  --agri-warning-bg: rgba(245, 158, 11, 0.15);
+  --agri-info: #0ea5e9;
+  --agri-info-bg: rgba(14, 165, 233, 0.15);
+
+  --tblr-font-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --tblr-body-bg: var(--agri-bg-primary);
+  --tblr-body-color: var(--agri-text);
+}
+
+/* Global Reset & Base Typography */
+body.admin-body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--agri-bg-primary) !important;
+  color: var(--agri-text) !important;
+  font-family: var(--tblr-font-sans-serif) !important;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-body .text-muted {
+  color: var(--agri-text-muted) !important;
+}
+
+/* ------------------------------------------------------------------ Admin Shell Layout */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.admin-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background-color: var(--agri-sidebar-bg) !important;
+  border-right: 1px solid var(--agri-border) !important;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 1020;
+  transition: transform 0.25s ease-in-out, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-main-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--agri-bg-primary);
+  transition: background-color 0.2s ease;
+}
+
+.admin-topbar {
+  background-color: var(--agri-topbar-bg);
+  border-bottom: 1px solid var(--agri-border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1010;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-content-area {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.admin-page-eyebrow {
+  color: var(--agri-accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.admin-chart-wrap {
+  height: 300px;
+  position: relative;
+}
+
+.chart-container {
+  height: 300px;
+  position: relative;
+}
+
+.chart-empty-state {
+  color: var(--agri-text-muted);
+  inset: 45% 1rem auto;
+  position: absolute;
+  text-align: center;
+  z-index: 1;
+}
+
+.chart-loading {
+  color: var(--agri-text-muted);
+  inset: 45% 1rem auto;
+  position: absolute;
+  text-align: center;
+  z-index: 1;
+}
+
+.forecast-day {
+  background: var(--agri-card-secondary);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.65rem;
+  height: 100%;
+  padding: 0.85rem;
+}
+
+.admin-weather-observation-list {
+  padding: 0 1.25rem;
+}
+
+.admin-weather-observation-row {
+  align-items: end;
+  border-bottom: 1px solid var(--agri-border);
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(9rem, 1.3fr) repeat(2, minmax(8rem, 1fr)) auto;
+  padding: 0.85rem 0;
+}
+
+.admin-weather-observation-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-weather-observation-date {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.admin-weather-observation-date strong {
+  color: var(--agri-text);
+  font-size: 0.9rem;
+}
+
+.admin-weather-observation-field {
+  min-width: 0;
+}
+
+.admin-weather-observation-field label {
+  color: var(--agri-text-muted) !important;
+  display: block;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.25rem;
+}
+
+.admin-weather-observation-field .form-control,
+.admin-weather-observation-field output {
+  background-color: var(--agri-input-bg);
+  border: 1px solid var(--agri-input-border);
+  border-radius: 0.5rem;
+  color: var(--agri-text);
+  display: block;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.65rem;
+  width: 100%;
+}
+
+.admin-weather-observation-save {
+  white-space: nowrap;
+}
+
+.weather-alert-row {
+  border-bottom: 1px solid var(--agri-border);
+  padding: 0.85rem 0;
+}
+
+.weather-alert-row:first-child {
+  padding-top: 0;
+}
+
+.weather-alert-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.activity-row {
+  border-bottom: 1px solid var(--agri-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+}
+
+.activity-row:last-child {
+  border-bottom: 0;
+}
+
+.activity-row:hover {
+  background: var(--agri-card-hover);
+}
+
+.activity-kind,
+.activity-time {
+  color: var(--agri-text-muted);
+  font-size: 0.72rem;
+}
+
+.activity-title {
+  color: var(--agri-text);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ Sidebar Branding & Nav */
+.admin-brand {
+  padding: 1.25rem 1.25rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border-bottom: 1px solid var(--agri-border);
+  text-decoration: none !important;
+}
+
+.admin-brand-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+  border-radius: 0.65rem;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 1.15rem;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.35);
+  flex-shrink: 0;
+}
+
+.admin-brand-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--agri-text);
+  line-height: 1.2;
+}
+
+.admin-brand-title span {
+  color: var(--agri-accent);
+}
+
+.admin-brand-subtitle {
+  font-size: 0.72rem;
+  color: var(--agri-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+/* Sidebar Section Headers */
+.admin-nav-section {
+  padding: 1.1rem 1.25rem 0.4rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--agri-text-dim);
+  font-weight: 700;
+}
+
+/* Nav links */
+.admin-nav-item {
+  margin: 0.1rem 0.75rem;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 0.85rem;
+  color: var(--agri-text-muted);
+  text-decoration: none !important;
+  border-radius: 0.55rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+}
+
+.admin-nav-link:hover {
+  color: var(--agri-accent);
+  background-color: var(--agri-accent-subtle);
+}
+
+.admin-nav-link.active {
+  color: var(--agri-accent);
+  background-color: var(--agri-accent-subtle);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--agri-accent);
+}
+
+.admin-nav-link i {
+  width: 1.25rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--agri-text-muted);
+  transition: color 0.15s ease;
+}
+
+.admin-nav-link:hover i,
+.admin-nav-link.active i {
+  color: var(--agri-accent);
+}
+
+.admin-nav-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--agri-badge-bg);
+  color: var(--agri-badge-text);
+  font-weight: 600;
+}
+
+/* Admin Notification Nav Item & Badges */
+.admin-sidebar .admin-nav-link .badge,
+.admin-sidebar .admin-nav-link .admin-nav-badge {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  transform: none !important;
+  margin-left: auto !important;
+  flex-shrink: 0;
+}
+
+.admin-nav-item a[href*="notification"] .admin-nav-badge {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  font-weight: 700;
+}
+
+[data-bs-theme="dark"] .admin-nav-item a[href*="notification"] .admin-nav-badge {
+  background: rgba(239, 68, 68, 0.28) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Sidebar Footer User Card */
+.admin-sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--agri-border);
+  background-color: var(--agri-card-secondary);
+}
+
+.admin-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-user-avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #15803d, #22c55e);
+  color: #ffffff;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+}
+
+.admin-user-info {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.admin-user-name {
+  font-weight: 600;
+  color: var(--agri-text);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-user-role {
+  font-size: 0.7rem;
+  color: var(--agri-accent);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ Stat Cards */
+.admin-stat-card {
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--agri-card-shadow);
+}
+
+.admin-stat-card:hover {
+  border-color: var(--agri-accent-border);
+  transform: translateY(-2px);
+  box-shadow: var(--agri-card-shadow-hover);
+}
+
+.admin-stat-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--agri-text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.admin-stat-number {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--agri-text);
+  line-height: 1.1;
+  margin-bottom: 0.35rem;
+}
+
+.admin-stat-icon {
+  position: absolute;
+  top: 1.15rem;
+  right: 1.15rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.65rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+}
+
+.icon-leaf {
+  background: var(--agri-accent-subtle);
+  color: var(--agri-accent);
+}
+
+.icon-users {
+  background: var(--agri-info-bg);
+  color: var(--agri-info);
+}
+
+.icon-alert {
+  background: var(--agri-danger-bg);
+  color: var(--agri-danger);
+}
+
+.icon-warn {
+  background: var(--agri-warning-bg);
+  color: var(--agri-warning);
+}
+
+.icon-ai {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+/* ------------------------------------------------------------------ Panels, Tables & Cards */
+.admin-card {
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--agri-card-shadow);
+}
+
+.admin-card-header {
+  padding: 1rem 1.25rem;
+  background: var(--agri-card-secondary);
+  border-bottom: 1px solid var(--agri-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--agri-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-card-body {
+  padding: 1.25rem;
+}
+
+/* Styled Table for Admin Dashboard & Changelists */
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--agri-text);
+}
+
+.admin-table th {
+  background: var(--agri-table-header);
+  color: var(--agri-text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--agri-border);
+  text-align: left;
+}
+
+.admin-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--agri-border);
+  vertical-align: middle;
+  font-size: 0.875rem;
+  color: var(--agri-text);
+}
+
+.admin-table tr:hover td {
+  background-color: var(--agri-card-hover);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-dashboard .admin-table th {
+  background-color: var(--agri-table-header) !important;
+  color: var(--agri-text-muted) !important;
+}
+
+.admin-dashboard .admin-table td {
+  background-color: var(--agri-card-bg) !important;
+  border-color: var(--agri-border) !important;
+  color: var(--agri-text) !important;
+}
+
+.admin-dashboard .admin-table tbody tr:hover td {
+  background-color: var(--agri-card-hover) !important;
+}
+
+.admin-dashboard .btn-success {
+  color: #fff !important;
+}
+
+/* ------------------------------------------------------------------ Django Admin Overrides */
+/* Change List table styling */
+#changelist {
+  background: var(--agri-card-bg) !important;
+  border: 1px solid var(--agri-border) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  box-shadow: var(--agri-card-shadow) !important;
+}
+
+#changelist table {
+  width: 100% !important;
+  background: transparent !important;
+  color: var(--agri-text) !important;
+  border-collapse: collapse !important;
+}
+
+#changelist table thead th {
+  background: var(--agri-table-header) !important;
+  color: var(--agri-text-muted) !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.85rem 1rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  font-weight: 600 !important;
+}
+
+#changelist table thead th a {
+  color: var(--agri-accent) !important;
+  text-decoration: none !important;
+}
+
+#changelist table tbody td {
+  padding: 0.85rem 1rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  background: transparent !important;
+  color: var(--agri-text) !important;
+}
+
+#changelist table tbody tr:hover td {
+  background-color: var(--agri-card-hover) !important;
+}
+
+/* Actions Toolbar */
+#changelist .actions {
+  background: var(--agri-card-secondary) !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  padding: 0.75rem 1rem !important;
+  color: var(--agri-text-muted) !important;
+}
+
+.admin-changelist-toolbar {
+  align-items: flex-end;
+  background: var(--agri-card-secondary);
+  border-bottom: 1px solid var(--agri-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.admin-changelist-toolbar #toolbar {
+  background: transparent !important;
+  border: 0 !important;
+  flex: 1 1 22rem;
+  margin: 0 !important;
+  min-width: min(100%, 22rem);
+  padding: 0 !important;
+}
+
+.admin-changelist-toolbar #changelist-search > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: none;
+}
+
+.admin-changelist-toolbar #changelist-search label {
+  line-height: 1.4;
+}
+
+.admin-changelist-toolbar #toolbar #searchbar {
+  flex: 1 1 12rem;
+  height: auto;
+  margin: 0;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  width: auto;
+}
+
+.admin-changelist-filters {
+  align-items: flex-end;
+  display: flex;
+  flex: 1 1 24rem;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.admin-changelist-filter {
+  flex: 1 1 10rem;
+  min-width: 9rem;
+}
+
+.admin-changelist-filter label {
+  color: var(--agri-text-muted) !important;
+  display: block;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  margin: 0 0 0.25rem;
+}
+
+.admin-changelist-filter-select {
+  background-color: var(--agri-input-bg) !important;
+  border: 1px solid var(--agri-input-border) !important;
+  color: var(--agri-text) !important;
+  min-height: 2.45rem;
+  padding: 0.45rem 2rem 0.45rem 0.7rem !important;
+  width: 100%;
+}
+
+.admin-changelist-filter-select:focus {
+  border-color: var(--agri-accent) !important;
+  box-shadow: 0 0 0 3px var(--agri-accent-border) !important;
+  outline: none;
+}
+
+.admin-changelist-filter-action,
+.admin-changelist-clear-filters {
+  align-self: center;
+  color: var(--agri-accent);
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-changelist-filter-action:hover,
+.admin-changelist-clear-filters:hover {
+  color: var(--agri-accent-hover);
+  text-decoration: underline;
+}
+
+@media (max-width: 767.98px) {
+  .admin-changelist-toolbar,
+  .admin-changelist-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-changelist-toolbar #toolbar,
+  .admin-changelist-filters,
+  .admin-changelist-filter {
+    flex-basis: auto;
+    min-width: 100%;
+    width: 100%;
+  }
+}
+
+/* Search Form */
+#changelist-search {
+  padding: 1rem !important;
+  background: var(--agri-card-secondary) !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+}
+
+#changelist-search input[type="text"] {
+  background-color: var(--agri-input-bg) !important;
+  color: var(--agri-text) !important;
+  border: 1px solid var(--agri-input-border) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.85rem !important;
+}
+
+#changelist-search input[type="text"]:focus {
+  border-color: var(--agri-accent) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--agri-accent-border) !important;
+}
+
+/* Change Form & Fieldsets */
+.module,
+fieldset.module {
+  background: var(--agri-card-bg) !important;
+  border: 1px solid var(--agri-border) !important;
+  border-radius: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+  overflow: hidden !important;
+  box-shadow: var(--agri-card-shadow) !important;
+}
+
+.module h2 {
+  background: var(--agri-card-secondary) !important;
+  color: var(--agri-text) !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  padding: 0.85rem 1.25rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+}
+
+.form-row {
+  border-bottom: 1px solid var(--agri-border) !important;
+  padding: 0.85rem 1.25rem !important;
+}
+
+label {
+  color: var(--agri-text) !important;
+  font-weight: 500 !important;
+  font-size: 0.85rem !important;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="url"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  background-color: var(--agri-input-bg) !important;
+  color: var(--agri-text) !important;
+  border: 1px solid var(--agri-input-border) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  font-family: inherit !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--agri-accent) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--agri-accent-border) !important;
+}
+
+/* Submit Line & Buttons */
+.submit-row {
+  background: var(--agri-card-secondary) !important;
+  border: 1px solid var(--agri-border) !important;
+  border-radius: 0.75rem !important;
+  padding: 1rem 1.25rem !important;
+}
+
+input[type="submit"],
+.button,
+button.button,
+a.button {
+  background-color: var(--agri-accent) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  padding: 0.55rem 1.15rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+}
+
+input[type="submit"]:hover,
+.button:hover,
+button.button:hover,
+a.button:hover {
+  background-color: var(--agri-accent-hover) !important;
+  box-shadow: 0 4px 12px var(--agri-accent-border) !important;
+}
+
+.submit-row a.deletelink {
+  background-color: var(--agri-danger) !important;
+  color: #ffffff !important;
+  border-radius: 0.5rem !important;
+  padding: 0.55rem 1.15rem !important;
+}
+
+/* Breadcrumbs & Topbar Elements */
+.admin-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--agri-text-muted);
+}
+
+.admin-breadcrumbs a {
+  color: var(--agri-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.admin-breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+.admin-topbar-crumb {
+  color: var(--agri-text) !important;
+}
+
+.admin-user-name-top {
+  color: var(--agri-text) !important;
+}
+
+.admin-page-heading,
+.admin-heading {
+  color: var(--agri-text) !important;
+}
+
+.admin-link {
+  color: var(--agri-text) !important;
+  transition: color 0.15s ease;
+}
+
+.admin-link:hover {
+  color: var(--agri-accent) !important;
+}
+
+/* Light & Dark toggle button styling */
+#adminThemeToggle {
+  border-color: var(--agri-border) !important;
+  color: var(--agri-text) !important;
+  background-color: var(--agri-card-secondary) !important;
+  transition: all 0.15s ease;
+}
+
+#adminThemeToggle:hover {
+  border-color: var(--agri-accent) !important;
+  color: var(--agri-accent) !important;
+}
+
+
+
+/* Messages / Notifications list */
+ul.messagelist {
+  margin: 0 0 1.25rem 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+ul.messagelist li {
+  padding: 0.75rem 1rem !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  font-weight: 500 !important;
+}
+
+ul.messagelist li.success {
+  background: var(--agri-accent-subtle) !important;
+  border: 1px solid var(--agri-accent-border) !important;
+  color: var(--agri-accent) !important;
+}
+
+ul.messagelist li.warning {
+  background: var(--agri-warning-bg) !important;
+  border: 1px solid var(--agri-warning) !important;
+  color: #b45309 !important;
+}
+
+ul.messagelist li.error {
+  background: var(--agri-danger-bg) !important;
+  border: 1px solid var(--agri-danger) !important;
+  color: var(--agri-danger) !important;
+}
+
+/* Object Tools (+Add buttons) */
+.object-tools {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+}
+
+.object-tools li {
+  margin: 0 !important;
+}
+
+.object-tools a,
+.object-tools a:link,
+.object-tools a:visited {
+  background-color: var(--agri-accent) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 0.5rem !important;
+  padding: 0.45rem 0.9rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  text-decoration: none !important;
+  border: none !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 2px 6px var(--agri-accent-border) !important;
+}
+
+.object-tools a:hover {
+  background-color: var(--agri-accent-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Pagination bar */
+.paginator {
+  background: var(--agri-card-secondary) !important;
+  border-top: 1px solid var(--agri-border) !important;
+  color: var(--agri-text-muted) !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.82rem !important;
+}
+
+.paginator a:link,
+.paginator a:visited {
+  color: var(--agri-accent) !important;
+  padding: 0.2rem 0.45rem !important;
+  border-radius: 0.3rem !important;
+  background: var(--agri-accent-subtle) !important;
+  text-decoration: none !important;
+}
+
+.paginator a:hover {
+  background: var(--agri-accent-border) !important;
+}
+
+.paginator .this-page {
+  font-weight: bold !important;
+  color: var(--agri-text) !important;
+  padding: 0.2rem 0.45rem !important;
+}
+
+/* Date Hierarchy navigation */
+.xfull,
+ul.toplinks {
+  background: var(--agri-card-secondary) !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.8rem !important;
+  color: var(--agri-text-muted) !important;
+  list-style: none !important;
+}
+
+.xfull a,
+ul.toplinks a {
+  color: var(--agri-accent) !important;
+  text-decoration: none !important;
+}
+
+/* Form Errors */
+.errorlist {
+  background: var(--agri-danger-bg) !important;
+  border: 1px solid var(--agri-danger) !important;
+  border-radius: 0.5rem !important;
+  color: var(--agri-danger) !important;
+  padding: 0.5rem 1rem !important;
+  list-style: none !important;
+  font-size: 0.82rem !important;
+}
+
+.errors input,
+.errors select,
+.errors textarea {
+  border-color: var(--agri-danger) !important;
+}
+
+/* Inline formsets */
+.inline-group {
+  background: var(--agri-card-bg) !important;
+  border: 1px solid var(--agri-border) !important;
+  border-radius: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+  overflow: hidden !important;
+}
+
+.inline-group h2 {
+  background: var(--agri-card-secondary) !important;
+  color: var(--agri-text) !important;
+  padding: 0.75rem 1.25rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+}
+
+.inline-related {
+  border-bottom: 1px solid var(--agri-border) !important;
+}
+
+.inline-related h3 {
+  background: var(--agri-card-secondary) !important;
+  color: var(--agri-accent) !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.8rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .admin-sidebar {
+    position: fixed;
+    left: -260px;
+    box-shadow: var(--agri-card-shadow);
+  }
+
+  .admin-sidebar.show {
+    left: 0;
+  }
+
+  .admin-content-area {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-topbar {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .admin-content-area {
+    padding: 0.75rem;
+  }
+
+  .admin-chart-wrap,
+  .chart-container {
+    height: 250px;
+  }
+
+  .admin-card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+/* Admin dashboard hierarchy and notification center */
+.admin-page-header {
+  align-items: center;
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--agri-card-shadow);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.admin-page-heading {
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  margin: 0 0 0.25rem;
+}
+
+.admin-weather-summary,
+.admin-unread-summary,
+.admin-summary-card,
+.admin-notification-item,
+.admin-confirm-card {
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--agri-card-shadow);
+}
+
+.admin-weather-summary {
+  padding: 0.9rem 1rem;
+}
+
+.admin-weather-summary-head,
+.admin-weather-alert-preview,
+.admin-notification-footer {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.admin-weather-summary-head {
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.admin-weather-summary-title {
+  color: var(--agri-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.15rem;
+}
+
+.admin-weather-summary-title i {
+  color: var(--agri-warning);
+  margin-right: 0.35rem;
+}
+
+.admin-weather-alert-preview {
+  border-top: 1px solid var(--agri-border);
+  min-width: 0;
+  padding: 0.65rem 0;
+}
+
+.admin-weather-alert-preview strong {
+  color: var(--agri-text);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-weather-severity,
+.admin-notification-status {
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+}
+
+.severity-critical {
+  background: var(--agri-danger-bg);
+  color: var(--agri-danger);
+}
+
+.severity-warning,
+.severity-high,
+.severity-advisory,
+.severity-watch {
+  background: var(--agri-warning-bg);
+  color: var(--agri-warning);
+}
+
+.severity-info,
+.severity-normal,
+.severity-low {
+  background: var(--agri-info-bg);
+  color: var(--agri-info);
+}
+
+.admin-unread-summary {
+  align-items: center;
+  color: var(--agri-text);
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+}
+
+.admin-unread-summary > i {
+  color: var(--agri-danger);
+}
+
+.admin-unread-summary a {
+  color: var(--agri-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-dashboard-details {
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.admin-dashboard-details > summary {
+  align-items: center;
+  background: var(--agri-card-bg);
+  color: var(--agri-text);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0.9rem 1rem;
+}
+
+.admin-dashboard-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-dashboard-details > summary:focus-visible,
+.admin-notification-filters a:focus-visible,
+.admin-notification-item a:focus-visible,
+.admin-notification-item button:focus-visible {
+  outline: 3px solid var(--agri-border-focus);
+  outline-offset: 2px;
+}
+
+.admin-dashboard-detail-content {
+  background: var(--agri-bg-primary);
+  border-top: 1px solid var(--agri-border);
+  padding: 1rem;
+}
+
+.admin-page-shell {
+  margin: 0 auto;
+  max-width: 1440px;
+}
+
+.admin-summary-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.admin-summary-card {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+}
+
+.admin-summary-label {
+  color: var(--agri-text-muted);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+}
+
+.admin-summary-card strong {
+  color: var(--agri-text);
+  font-size: 1.5rem;
+}
+
+.admin-notification-filters {
+  border-bottom: 1px solid var(--agri-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.admin-notification-filters a {
+  border-radius: 0.45rem 0.45rem 0 0;
+  color: var(--agri-text-muted);
+  padding: 0.55rem 0.85rem;
+  text-decoration: none;
+}
+
+.admin-notification-filters a[aria-current="page"] {
+  background: var(--agri-accent-subtle);
+  box-shadow: inset 0 -2px 0 var(--agri-accent);
+  color: var(--agri-accent);
+  font-weight: 700;
+}
+
+.admin-notification-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-notification-item {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.admin-notification-item.is-unread {
+  border-left: 3px solid var(--agri-accent);
+}
+
+.admin-notification-severity {
+  align-items: center;
+  background: var(--agri-accent-subtle);
+  border-radius: 50%;
+  color: var(--agri-accent);
+  display: flex;
+  flex: 0 0 2.25rem;
+  height: 2.25rem;
+  justify-content: center;
+}
+
+.admin-notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-notification-title {
+  color: var(--agri-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.admin-notification-meta,
+.admin-notification-footer {
+  color: var(--agri-text-muted);
+  font-size: 0.75rem;
+}
+
+.admin-notification-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.admin-notification-dot {
+  background: var(--agri-text-dim);
+  border-radius: 50%;
+  height: 3px;
+  width: 3px;
+}
+
+.admin-notification-description {
+  color: var(--agri-text);
+  margin: 0.6rem 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-notification-footer {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.admin-empty-state {
+  background: var(--agri-card-bg);
+  border: 1px dashed var(--agri-border);
+  border-radius: 0.75rem;
+  color: var(--agri-text-muted);
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.admin-empty-state i {
+  color: var(--agri-text-dim);
+  font-size: 1.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.admin-empty-state h2 {
+  color: var(--agri-text);
+  font-size: 1rem;
+}
+
+.admin-notification-pagination {
+  align-items: center;
+  color: var(--agri-text-muted);
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.admin-notification-pagination a {
+  color: var(--agri-accent);
+  font-weight: 600;
+}
+
+.admin-topbar-notification-count {
+  background: var(--agri-danger);
+  border: 2px solid var(--agri-topbar-bg);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.63rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 1.15rem;
+  padding: 0.2rem 0.28rem;
+  position: absolute;
+  right: -0.3rem;
+  top: -0.35rem;
+}
+
+.admin-live-toast {
+  align-items: center;
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-left: 4px solid var(--agri-accent);
+  border-radius: 0.65rem;
+  box-shadow: var(--agri-card-shadow-hover);
+  color: var(--agri-text);
+  display: flex;
+  gap: 1rem;
+  max-width: min(25rem, calc(100vw - 2rem));
+  opacity: 0;
+  padding: 0.8rem 1rem;
+  pointer-events: none;
+  position: fixed;
+  right: 1rem;
+  top: 5rem;
+  transform: translateY(-0.5rem);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  visibility: hidden;
+  z-index: 2000;
+}
+
+.admin-live-toast.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.admin-live-toast strong,
+.admin-live-toast span {
+  display: block;
+}
+
+.admin-live-toast span {
+  color: var(--agri-text-muted);
+  font-size: 0.8rem;
+}
+
+.admin-live-toast button {
+  background: transparent;
+  border: 0;
+  color: var(--agri-text-muted);
+  font-size: 1.25rem;
+}
+
+.admin-confirm-card {
+  margin: 0 auto;
+  max-width: 680px;
+  padding: 1.25rem;
+}
+
+.admin-confirm-user-list {
+  background: var(--agri-card-secondary);
+  border-radius: 0.5rem;
+  list-style: none;
+  margin: 1rem 0 0;
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.5rem 0.85rem;
+}
+
+.admin-confirm-user-list li {
+  border-bottom: 1px solid var(--agri-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+}
+
+.admin-confirm-user-list li:last-child {
+  border-bottom: 0;
+}
+
+/* Apply the Admin design tokens to Django's forms, changelists and overlays. */
+.admin-body .admin-summary-card,
+.admin-body #changelist,
+.admin-body #content-main,
+.admin-body .module,
+.admin-body .inline-group,
+.admin-body .submit-row,
+.admin-body .calendarbox,
+.admin-body .clockbox,
+.admin-body .selector,
+.admin-body .selector-available,
+.admin-body .selector-chosen,
+.admin-body .modal-content,
+.admin-body .dropdown-menu,
+.admin-body dialog {
+  color: var(--agri-text);
+}
+
+.admin-body #changelist .results,
+.admin-body #changelist-form .results {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.admin-body #changelist table tbody tr:nth-child(odd) td,
+.admin-body #changelist table tbody tr:nth-child(even) td {
+  background: transparent !important;
+}
+
+.admin-body #changelist table tbody tr {
+  background-color: var(--agri-card-bg) !important;
+}
+
+.admin-body #changelist table tbody tr:hover {
+  background-color: var(--agri-card-hover) !important;
+}
+
+.reminder-activity-pill {
+  background-color: var(--reminder-activity-bg) !important;
+  border: 1px solid var(--reminder-activity-border);
+  color: var(--reminder-activity-text) !important;
+  font-weight: 600;
+}
+
+.reminder-activity-seedling {
+  --reminder-activity-bg: #dcfce7;
+  --reminder-activity-border: #bbf7d0;
+  --reminder-activity-text: #166534;
+}
+
+.reminder-activity-irrigation {
+  --reminder-activity-bg: #e0f2fe;
+  --reminder-activity-border: #bae6fd;
+  --reminder-activity-text: #075985;
+}
+
+.reminder-activity-fertilizer {
+  --reminder-activity-bg: #fef3c7;
+  --reminder-activity-border: #fde68a;
+  --reminder-activity-text: #92400e;
+}
+
+.reminder-activity-pest {
+  --reminder-activity-bg: #ffe4e6;
+  --reminder-activity-border: #fecdd3;
+  --reminder-activity-text: #9f1239;
+}
+
+.reminder-activity-growth {
+  --reminder-activity-bg: #ede9fe;
+  --reminder-activity-border: #ddd6fe;
+  --reminder-activity-text: #5b21b6;
+}
+
+.reminder-activity-harvest {
+  --reminder-activity-bg: #ffedd5;
+  --reminder-activity-border: #fed7aa;
+  --reminder-activity-text: #9a3412;
+}
+
+.reminder-activity-general {
+  --reminder-activity-bg: #e2e8f0;
+  --reminder-activity-border: #cbd5e1;
+  --reminder-activity-text: #334155;
+}
+
+[data-bs-theme="dark"] .reminder-activity-seedling {
+  --reminder-activity-bg: rgba(34, 197, 94, 0.16);
+  --reminder-activity-border: rgba(74, 222, 128, 0.3);
+  --reminder-activity-text: #86efac;
+}
+
+[data-bs-theme="dark"] .reminder-activity-irrigation {
+  --reminder-activity-bg: rgba(14, 165, 233, 0.16);
+  --reminder-activity-border: rgba(56, 189, 248, 0.3);
+  --reminder-activity-text: #7dd3fc;
+}
+
+[data-bs-theme="dark"] .reminder-activity-fertilizer {
+  --reminder-activity-bg: rgba(245, 158, 11, 0.16);
+  --reminder-activity-border: rgba(251, 191, 36, 0.3);
+  --reminder-activity-text: #fcd34d;
+}
+
+[data-bs-theme="dark"] .reminder-activity-pest {
+  --reminder-activity-bg: rgba(244, 63, 94, 0.16);
+  --reminder-activity-border: rgba(251, 113, 133, 0.3);
+  --reminder-activity-text: #fda4af;
+}
+
+[data-bs-theme="dark"] .reminder-activity-growth {
+  --reminder-activity-bg: rgba(139, 92, 246, 0.18);
+  --reminder-activity-border: rgba(167, 139, 250, 0.3);
+  --reminder-activity-text: #c4b5fd;
+}
+
+[data-bs-theme="dark"] .reminder-activity-harvest {
+  --reminder-activity-bg: rgba(249, 115, 22, 0.16);
+  --reminder-activity-border: rgba(251, 146, 60, 0.3);
+  --reminder-activity-text: #fdba74;
+}
+
+[data-bs-theme="dark"] .reminder-activity-general {
+  --reminder-activity-bg: rgba(148, 163, 184, 0.16);
+  --reminder-activity-border: rgba(148, 163, 184, 0.3);
+  --reminder-activity-text: #cbd5e1;
+}
+
+.admin-body #changelist .paginator,
+.admin-body #changelist .actions,
+.admin-body #changelist-filter,
+.admin-body #changelist-search,
+.admin-body .selector,
+.admin-body .selector-available,
+.admin-body .selector-chosen,
+.admin-body .calendarbox,
+.admin-body .clockbox,
+.admin-body .modal-content,
+.admin-body .dropdown-menu,
+.admin-body dialog {
+  background-color: var(--agri-card-bg) !important;
+  border-color: var(--agri-border) !important;
+}
+
+.admin-body .selector select,
+.admin-body .actions select,
+.admin-body .paginator,
+.admin-body .help,
+.admin-body .quiet,
+.admin-body .admin-filter {
+  color: var(--agri-text-muted) !important;
+}
+
+.admin-body a:focus-visible,
+.admin-body button:focus-visible,
+.admin-body input:focus-visible,
+.admin-body select:focus-visible,
+.admin-body textarea:focus-visible {
+  outline: 3px solid var(--agri-border-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+  .admin-weather-observation-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-weather-observation-date {
+    grid-column: 1 / -1;
+  }
+
+  .admin-weather-observation-save {
+    justify-self: start;
+  }
+
+  .admin-page-header,
+  .admin-weather-summary-head,
+  .admin-notification-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-notification-item {
+    padding: 0.75rem;
+  }
+
+  .admin-dashboard-details > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-unread-summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-unread-summary a {
+    margin-left: 1.5rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-live-toast,
+  .admin-stat-card,
+  .admin-nav-link {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   SMART AGRIASSIST — Admin UI Standardization & Farmer Portfolio System
+   Scoped exclusively to Admin Pages — Preserves Dashboard & User Area
+   ========================================================================== */
+
+/* User Management Row & Avatar */
+.admin-user-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--agri-accent-subtle);
+  color: var(--agri-accent);
+  border: 1px solid var(--agri-accent-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.admin-user-link {
+  transition: opacity 0.15s ease;
+}
+
+.admin-user-link:hover .admin-user-name {
+  color: var(--agri-accent) !important;
+  text-decoration: underline;
+}
+
+/* Farmer Portfolio Hero Card */
+.admin-portfolio-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--agri-accent-subtle) 0%, var(--agri-card-secondary) 100%);
+  color: var(--agri-accent);
+  border: 2px solid var(--agri-accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.85rem;
+  flex-shrink: 0;
+  box-shadow: var(--agri-card-shadow);
+}
+
+/* Compact Admin Table Standardization */
+.admin-table-compact {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+
+.admin-table-compact th {
+  background: var(--agri-table-header) !important;
+  color: var(--agri-text-muted) !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.65rem 0.85rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  font-weight: 600 !important;
+}
+
+.admin-table-compact td {
+  padding: 0.65rem 0.85rem !important;
+  border-bottom: 1px solid var(--agri-border) !important;
+  color: var(--agri-text) !important;
+  vertical-align: middle !important;
+}
+
+.admin-table-compact tbody tr:hover td {
+  background-color: var(--agri-card-hover) !important;
+}
+
+.admin-diagnosis-list {
+  padding: 0.35rem 1rem;
+}
+
+.admin-diagnosis-record {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--agri-border);
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  padding: 1rem 0;
+}
+
+.admin-diagnosis-record:last-child {
+  border-bottom: 0;
+}
+
+.admin-diagnosis-image {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--agri-accent-subtle);
+  border: 1px solid var(--agri-accent-border);
+  border-radius: 0.75rem;
+  color: var(--agri-accent);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  width: 3.25rem;
+}
+
+.admin-diagnosis-image img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.admin-diagnosis-image i {
+  font-size: 1.25rem;
+}
+
+.admin-diagnosis-details {
+  min-width: 0;
+}
+
+.admin-diagnosis-topline,
+.admin-diagnosis-heading,
+.admin-diagnosis-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+}
+
+.admin-diagnosis-topline {
+  justify-content: space-between;
+}
+
+.admin-diagnosis-heading {
+  min-width: 0;
+}
+
+.admin-diagnosis-heading h3 {
+  color: var(--agri-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-diagnosis-crop {
+  background: var(--agri-accent-subtle);
+  border: 1px solid var(--agri-accent-border);
+  border-radius: 999px;
+  color: var(--agri-accent);
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+}
+
+.admin-diagnosis-separator {
+  color: var(--agri-text-dim);
+}
+
+.admin-diagnosis-symptoms {
+  color: var(--agri-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0.35rem 0 0.55rem;
+}
+
+.admin-diagnosis-meta {
+  color: var(--agri-text-muted);
+  font-size: 0.72rem;
+}
+
+.admin-diagnosis-confidence,
+.admin-diagnosis-farmer,
+.admin-diagnosis-date {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.admin-diagnosis-confidence {
+  background: var(--agri-info-bg);
+  border-radius: 999px;
+  color: var(--agri-info);
+  font-weight: 600;
+  padding: 0.18rem 0.5rem;
+}
+
+.admin-diagnosis-confidence.confidence-high {
+  background: var(--agri-accent-subtle);
+  color: var(--agri-accent);
+}
+
+.admin-diagnosis-confidence.confidence-moderate {
+  background: var(--agri-warning-bg);
+  color: var(--agri-warning);
+}
+
+.admin-diagnosis-farmer {
+  color: var(--agri-text-muted);
+  text-decoration: none;
+}
+
+.admin-diagnosis-farmer:hover {
+  color: var(--agri-accent);
+  text-decoration: underline;
+}
+
+.admin-diagnosis-action {
+  align-self: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .admin-diagnosis-list {
+    padding: 0 0.75rem;
+  }
+
+  .admin-diagnosis-record {
+    gap: 0.65rem;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+  }
+
+  .admin-diagnosis-image {
+    width: 2.75rem;
+  }
+
+  .admin-diagnosis-action {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+/* Chronological Activity Timeline */
+.admin-timeline {
+  position: relative;
+  padding: 0.5rem 0 0.5rem 0.5rem;
+}
+
+.admin-timeline::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 19px;
+  width: 2px;
+  background: var(--agri-border);
+}
+
+.admin-timeline-item {
+  position: relative;
+  padding-left: 36px;
+  margin-bottom: 1rem;
+}
+
+.admin-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.admin-timeline-badge {
+  position: absolute;
+  left: 7px;
+  top: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #ffffff;
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--agri-card-bg);
+}
+
+.admin-timeline-content {
+  background: var(--agri-card-secondary);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  transition: border-color 0.15s ease;
+}
+
+.admin-timeline-content:hover {
+  border-color: var(--agri-accent-border);
+}
+
+/* Admin Empty States */
+.admin-empty-state {
+  background: var(--agri-card-bg);
+  border: 1px dashed var(--agri-border);
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+}
+
+/* Dark mode specific fine-tuning */
+[data-bs-theme="dark"] .admin-timeline-content {
+  background: #14281b;
+  border-color: var(--agri-border);
+}
+
+[data-bs-theme="dark"] .admin-user-avatar-sm {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: var(--agri-accent);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-bs-theme="dark"] .admin-portfolio-avatar {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, #162c1e 100%);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: var(--agri-accent);
+}
+
+
+/* --------------------------------------------------------------------------
+   Scheduled Reminders - SaaS Data Table, Filter Sidebar & Form Polish
+   -------------------------------------------------------------------------- */
+.app-crops.model-scheduledreminder #changelist {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.app-crops.model-scheduledreminder #changelist .changelist-form-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter {
+  width: 290px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1rem;
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: var(--agri-shadow-sm);
+}
+
+.app-crops.model-scheduledreminder #changelist-filter h2 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--agri-text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--agri-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: transparent;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter h3 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--agri-text-muted);
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter ul {
+  padding-left: 0;
+  list-style: none;
+  margin-bottom: 0;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter li {
+  margin-bottom: 0.3rem;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter li a {
+  display: block;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.375rem;
+  color: var(--agri-text);
+  text-decoration: none;
+  font-size: 0.82rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter li a:hover {
+  background-color: var(--agri-hover-bg);
+  color: var(--agri-accent);
+}
+
+.app-crops.model-scheduledreminder #changelist-filter li.selected a {
+  background-color: var(--agri-accent);
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter-extra-actions {
+  font-size: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--agri-border);
+}
+
+.app-crops.model-scheduledreminder #changelist-filter-extra-actions a {
+  color: var(--agri-danger);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app-crops.model-scheduledreminder #changelist-filter-extra-actions a:hover {
+  text-decoration: underline;
+}
+
+/* SaaS Table Styling for Scheduled Reminders */
+.app-crops.model-scheduledreminder #result_list {
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--agri-shadow-sm);
+  width: 100%;
+}
+
+.app-crops.model-scheduledreminder #result_list th {
+  background: var(--agri-table-header-bg);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--agri-text-muted);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--agri-border);
+}
+
+.app-crops.model-scheduledreminder #result_list td {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--agri-border);
+  font-size: 0.85rem;
+}
+
+.app-crops.model-scheduledreminder #result_list tr:last-child td {
+  border-bottom: none;
+}
+
+.app-crops.model-scheduledreminder #result_list tbody tr:hover td {
+  background-color: var(--agri-hover-bg);
+}
+
+/* Form Container for Scheduled Reminders */
+.app-crops.model-scheduledreminder.change-form .reminder-form-container section.admin-card {
+  box-shadow: var(--agri-shadow-sm);
+  transition: border-color 0.15s ease-in-out;
+}
+
+.app-crops.model-scheduledreminder.change-form .reminder-form-container section.admin-card:hover {
+  border-color: var(--agri-accent-border);
+}
+
+.app-crops.model-scheduledreminder.change-form .form-row {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--agri-border);
+}
+
+.app-crops.model-scheduledreminder.change-form .form-row:last-child {
+  border-bottom: none;
+}
+
+.app-crops.model-scheduledreminder.change-form .form-row label {
+  font-weight: 600;
+  color: var(--agri-text);
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.app-crops.model-scheduledreminder.change-form .submit-row {
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--agri-shadow-sm);
+}
+
+.app-crops.model-scheduledreminder.change-form .submit-row input[type="submit"] {
+  padding: 0.55rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.app-crops.model-scheduledreminder.change-form .submit-row input[type="submit"].default {
+  background-color: var(--agri-accent);
+  color: #ffffff;
+  border: 1px solid var(--agri-accent);
+  box-shadow: 0 2px 4px rgba(25, 135, 84, 0.25);
+}
+
+.app-crops.model-scheduledreminder.change-form .submit-row input[type="submit"].default:hover {
+  background-color: var(--agri-accent-dark);
+  border-color: var(--agri-accent-dark);
+}
+
+@media (max-width: 991.98px) {
+  .app-crops.model-scheduledreminder #changelist {
+    flex-direction: column;
+  }
+  .app-crops.model-scheduledreminder #changelist-filter {
+    width: 100%;
+    position: static;
+  }
+}
