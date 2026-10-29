@@ -108,6 +108,21 @@ def crop_add(request):
         # Generate automated stage-based reminders
         _generate_crop_reminders(crop)
 
+        try:
+            from apps.info.models import Notification
+            pref = getattr(request.user, 'preference', None)
+            if not pref or pref.application_notices_enabled:
+                Notification.objects.create(
+                    user=request.user,
+                    title=f"🌱 New Crop Registered: {crop.crop_name}",
+                    message=f'"{crop.crop_name}" ({crop.field_name or "Main Field"}) has been added to automated growth monitoring.',
+                    category=Notification.Category.NOTICE,
+                    priority=Notification.Priority.NORMAL,
+                    related_url=f"/crops/tracker/{crop.pk}/",
+                )
+        except Exception:
+            pass
+
         messages.success(
             request,
             f'"{crop.crop_name}" registered successfully! Growth timeline and reminders generated.',

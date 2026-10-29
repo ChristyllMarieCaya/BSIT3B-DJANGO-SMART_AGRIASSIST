@@ -27,13 +27,20 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
-from apps.core.weather import evaluate_weather_risks, get_weather
+from apps.core.weather import (
+    evaluate_weather_risks,
+    geocode_location,
+    get_weather,
+    get_weather_history,
+)
 from apps.crops.growth_engine import calculate_crop_growth
 from apps.crops.models import Crop, ScheduledReminder
-from apps.info.models import Notification, UserPreference, WeatherAlert
+from apps.info.models import Notification, UserPreference, WeatherAlert, WeatherRecord
 
 logger = logging.getLogger('agricultural.automation')
 User = get_user_model()
+WEATHER_HISTORY_SYNC_INTERVAL = timedelta(hours=6)
+AUTOMATED_WEATHER_RECORD_NOTE = 'Automatically synced from Open-Meteo.'
 
 
 class AutomationResult:
@@ -42,12 +49,14 @@ class AutomationResult:
         self.completed_at = None
         self.users_processed = 0
         self.weather_checks = 0
+        self.weather_records_synced = 0
         self.weather_alerts_generated = 0
         self.duplicate_alerts_skipped = 0
         self.emails_sent = 0
         self.crops_updated = 0
         self.stage_transitions_detected = 0
         self.reminders_generated = 0
+        self.reminder_notifications_sent = 0
         self.overdue_reminders_flagged = 0
         self.cleaned_records = 0
         self.errors = []
@@ -60,12 +69,14 @@ class AutomationResult:
             'duration_seconds': round(duration, 2),
             'users_processed': self.users_processed,
             'weather_checks': self.weather_checks,
+            'weather_records_synced': self.weather_records_synced,
             'weather_alerts_generated': self.weather_alerts_generated,
             'duplicate_alerts_skipped': self.duplicate_alerts_skipped,
             'emails_sent': self.emails_sent,
             'crops_updated': self.crops_updated,
             'stage_transitions_detected': self.stage_transitions_detected,
             'reminders_generated': self.reminders_generated,
+            'reminder_notifications_sent': self.reminder_notifications_sent,
             'overdue_reminders_flagged': self.overdue_reminders_flagged,
             'cleaned_records': self.cleaned_records,
             'errors_count': len(self.errors),
@@ -116,6 +127,17 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
         return
 
     location = pref.farm_location or 'Farm Location'
+
+    # Auto-geocode location if GPS coordinates are not yet configured
+    if pref.farm_location and (pref.latitude is None or pref.longitude is None):
+        geo = geocode_location(pref.farm_location)
+        if geo:
+            pref.latitude = geo['latitude']
+            pref.longitude = geo['longitude']
+            if not pref.farm_timezone:
+                pref.farm_timezone = geo.get('timezone', 'Asia/Manila')
+            pref.save(update_fields=['latitude', 'longitude', 'farm_timezone'])
+
     lat = float(pref.latitude) if pref.latitude else 16.9754
     lon = float(pref.longitude) if pref.longitude else 121.7743
 
@@ -141,7 +163,18 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
     if not weather_data or not weather_data.get('available'):
         return
 
-    # Task 2: Weather Risk Evaluation
+    # Update latest successful weather update timestamp persistently
+    pref.weather_last_updated = timezone.now()
+    pref.save(update_fields=['weather_last_updated'])
+    result.weather_records_synced += _sync_weather_history(
+        user=user,
+        pref=pref,
+        location=location,
+        latitude=lat,
+        longitude=lon,
+    )
+
+    # Task 2: Weather Risk Evaluation (incorporates official PAGASA warnings & Open-Meteo forecast risks)
     risks = evaluate_weather_risks(
         weather_data=weather_data,
         location_name=location,
@@ -149,6 +182,9 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
         wind_threshold_kmh=pref.wind_alert_threshold_kmh,
         temp_high_threshold_c=pref.temp_high_threshold_c,
         temp_low_threshold_c=pref.temp_low_threshold_c,
+        lat=lat,
+        lon=lon,
+        country=pref.country,
     )
 
     # Severity ordering
@@ -161,15 +197,36 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
     }
     min_rank = severity_rank.get(pref.weather_alert_min_severity, 2)
 
-    # Task 3, 4, 9: Severe-Weather Alert Processing & Deduplication
+    # Update or resolve existing alerts when weather conditions change
+    active_existing_alerts = WeatherAlert.objects.filter(user=user, is_active=True)
+    current_alert_types = {r['alert_type'] for r in risks if severity_rank.get(r.get('severity', 'advisory'), 2) >= min_rank}
+
+    for existing_alert in active_existing_alerts:
+        if existing_alert.alert_type not in current_alert_types:
+            # Weather risk has passed; resolve alert
+            existing_alert.is_active = False
+            existing_alert.save(update_fields=['is_active'])
+
+    # Task 3, 4, 9: Severe-Weather Alert Processing, Deduplication, & Notifications
     for r in risks:
         r_severity = r.get('severity', 'advisory')
         if severity_rank.get(r_severity, 2) < min_rank:
             continue
 
         dedup_key = r.get('deduplication_key')
+        is_official = r.get('is_official', False)
 
-        # Task 9: Alert Deduplication check
+        # Prevent duplicate notifications for continuing weather events:
+        # Check if an alert for this user with this alert_type is already active
+        existing_active = active_existing_alerts.filter(alert_type=r['alert_type']).first()
+        if existing_active:
+            # Continuing weather event: update condition without duplicate notification
+            existing_active.forecast_condition = r['forecast_condition']
+            existing_active.expected_timing = r.get('expected_timing', '')
+            existing_active.save(update_fields=['forecast_condition', 'expected_timing'])
+            result.duplicate_alerts_skipped += 1
+            continue
+
         if dedup_key and WeatherAlert.objects.filter(deduplication_key=dedup_key).exists():
             result.duplicate_alerts_skipped += 1
             continue
@@ -186,18 +243,20 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
                     expected_timing=r.get('expected_timing', ''),
                     agricultural_impact=r['agricultural_impact'],
                     precautionary_actions=r['precautionary_actions'],
-                    source=r.get('source', 'OpenWeatherMap / Agro-Met'),
+                    source=r.get('source', 'Open-Meteo Forecast Alert'),
+                    is_official=is_official,
                     deduplication_key=dedup_key,
                     is_active=True,
                 )
                 result.weather_alerts_generated += 1
 
-                # Task 4: In-app Notification Delivery
+                # Task 4: In-app Notification Delivery with clear official distinction
                 if pref.channel_in_app and pref.weather_alerts_enabled:
+                    badge_prefix = "🚨 [Official Warning]" if is_official else "⚠️ [Weather Alert]"
                     Notification.objects.create(
                         user=user,
-                        title=f"⚠️ {r['title']}",
-                        message=f"{r['agricultural_impact']}\n\nActions:\n{r['precautionary_actions']}",
+                        title=f"{badge_prefix} {r['title']}",
+                        message=f"{r['agricultural_impact']}\n\nPrecautionary Actions:\n{r['precautionary_actions']}",
                         category=Notification.Category.WEATHER_ALERT,
                         priority=(
                             Notification.Priority.CRITICAL if r_severity == 'critical'
@@ -208,6 +267,20 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
                         related_url='/weather/',
                     )
 
+                # Agricultural recommendation for severe weather
+                if pref.agricultural_recommendations_enabled and r['alert_type'] in ('heavy_rain', 'storm'):
+                    rec_dedup = f"rec_{r['alert_type']}_{user.pk}_{date.today().isoformat()}"
+                    if not Notification.objects.filter(deduplication_key=rec_dedup).exists():
+                        Notification.objects.create(
+                            user=user,
+                            title=f"🌾 Farm Advisory: {r['title']} Agricultural Precautions",
+                            message=f"Recommended actions for your active crops:\n{r['precautionary_actions']}",
+                            category=Notification.Category.RECOMMENDATION,
+                            priority=Notification.Priority.NORMAL,
+                            deduplication_key=rec_dedup,
+                            related_url='/crops/tracker/',
+                        )
+
                 # Task 4: Email Alert Delivery (if enabled and configured)
                 if pref.channel_email and user.email and pref.weather_alerts_enabled:
                     _send_weather_alert_email(user, alert, r, result)
@@ -216,6 +289,85 @@ def _process_weather_automations(user: Any, pref: UserPreference, result: Automa
             err_msg = f'Failed to persist weather alert for user {user.username}: {exc}'
             logger.error(err_msg)
             result.errors.append(err_msg)
+
+    # Secondary automated risk check: high humidity + warm temperatures favor fungal pest and disease
+    curr = weather_data.get('current', {})
+    if pref.pest_disease_advisories_enabled and curr.get('humidity', 0) >= 85 and curr.get('temperature', 0) >= 26.0:
+        pest_dedup = f"pest_hum_{user.pk}_{date.today().isoformat()}"
+        if not Notification.objects.filter(deduplication_key=pest_dedup).exists():
+            Notification.objects.create(
+                user=user,
+                title="🐛 Pest & Disease Advisory: High Fungal & Bacterial Pressure",
+                message=(
+                    f"Current high relative humidity ({curr.get('humidity')}%) and warm temperatures ({curr.get('temperature')}°C) "
+                    "increase the likelihood of leaf blast, sheath blight, bacterial leaf streak, and fungal rots. "
+                    "Inspect crop canopy lower leaves and maintain field aeration."
+                ),
+                category=Notification.Category.PEST_DISEASE,
+                priority=Notification.Priority.NORMAL,
+                deduplication_key=pest_dedup,
+                related_url='/crops/tracker/',
+            )
+
+
+def _sync_weather_history(user, pref, location, latitude, longitude):
+    """Persist recent daily API observations without replacing manual records."""
+    now = timezone.now()
+    if (
+        pref.weather_history_last_synced
+        and now - pref.weather_history_last_synced < WEATHER_HISTORY_SYNC_INTERVAL
+    ):
+        return 0
+
+    today = timezone.localdate()
+    start_date = today - timedelta(days=13)
+    history = get_weather_history(
+        latitude,
+        longitude,
+        start_date=start_date.isoformat(),
+        end_date=today.isoformat(),
+        units='metric',
+    )
+    if not history.get('available'):
+        logger.warning('Daily weather history is unavailable for %s.', location)
+        return 0
+
+    synced_count = 0
+    for day_text, values in history.get('daily', {}).items():
+        try:
+            recorded_on = date.fromisoformat(day_text)
+        except (TypeError, ValueError):
+            logger.warning('Ignoring invalid weather-history date %r for %s.', day_text, location)
+            continue
+        if recorded_on < start_date or recorded_on > today:
+            continue
+
+        record = WeatherRecord.objects.filter(
+            owner=user,
+            location__iexact=location,
+            recorded_on=recorded_on,
+        ).order_by('pk').first()
+        if record and record.notes != AUTOMATED_WEATHER_RECORD_NOTE:
+            continue
+
+        if record:
+            record.temperature = values.get('temperature')
+            record.rainfall = values.get('rainfall')
+            record.save(update_fields=['temperature', 'rainfall', 'updated_at'])
+        else:
+            WeatherRecord.objects.create(
+                owner=user,
+                location=location,
+                recorded_on=recorded_on,
+                temperature=values.get('temperature'),
+                rainfall=values.get('rainfall'),
+                notes=AUTOMATED_WEATHER_RECORD_NOTE,
+            )
+        synced_count += 1
+
+    pref.weather_history_last_synced = now
+    pref.save(update_fields=['weather_history_last_synced'])
+    return synced_count
 
 
 def _send_weather_alert_email(user: Any, alert: WeatherAlert, risk: Dict[str, Any], result: AutomationResult):
@@ -305,14 +457,23 @@ def _process_crop_automations(user: Any, pref: UserPreference, result: Automatio
                 for m in growth.get('milestones', []):
                     m_start = m.get('start_date')
                     if m_start and 0 <= (m_start - today).days <= 3:
-                        rem_title = f"{crop.crop_name}: {m['name']} Care"
+                        is_seedling = m.get('order') == 1
+                        rem_title = (
+                            f"{crop.crop_name}: Seedling Care & Emergence Check"
+                            if is_seedling
+                            else f"{crop.crop_name}: {m['name']} Monitoring"
+                        )
                         _, created = ScheduledReminder.objects.get_or_create(
                             user=user,
                             crop=crop,
                             title=rem_title,
+                            activity_type=(
+                                ScheduledReminder.ActivityType.SEEDLING_CARE
+                                if is_seedling
+                                else ScheduledReminder.ActivityType.GROWTH_MONITORING
+                            ),
                             due_date=m_start,
                             defaults={
-                                'activity_type': ScheduledReminder.ActivityType.GROWTH_MONITORING,
                                 'notes': f'Recommended activities: {", ".join(m.get("activities", []))}',
                                 'is_automated': True,
                             },
@@ -338,6 +499,49 @@ def _process_crop_automations(user: Any, pref: UserPreference, result: Automatio
         err_msg = f'Failed updating overdue reminders for user {user.username}: {exc}'
         logger.error(err_msg)
         result.errors.append(err_msg)
+
+    _notify_due_crop_reminders(user, pref, result, today)
+
+
+def _notify_due_crop_reminders(user: Any, pref: UserPreference, result: AutomationResult, today: date):
+    """Create one in-app notification for each automated reminder due within three days."""
+    if not pref.auto_crop_reminders_enabled or not pref.channel_in_app:
+        return
+
+    reminders = ScheduledReminder.objects.filter(
+        user=user,
+        is_automated=True,
+        status__in=[ScheduledReminder.Status.PENDING, ScheduledReminder.Status.OVERDUE],
+        due_date__range=(today - timedelta(days=3), today + timedelta(days=3)),
+    ).select_related('crop')
+
+    for reminder in reminders:
+        is_overdue = reminder.status == ScheduledReminder.Status.OVERDUE
+        due_label = reminder.due_date.strftime('%B %d, %Y')
+        title = f'Overdue crop reminder: {reminder.title}' if is_overdue else f'Upcoming crop reminder: {reminder.title}'
+        message = (
+            f'This scheduled crop activity was due on {due_label}.'
+            if is_overdue
+            else f'This scheduled crop activity is due on {due_label}.'
+        )
+        try:
+            _, created = Notification.objects.get_or_create(
+                deduplication_key=f'scheduled_crop_reminder_{reminder.pk}',
+                defaults={
+                    'user': user,
+                    'title': title,
+                    'message': message,
+                    'category': Notification.Category.CROP_CARE,
+                    'priority': Notification.Priority.HIGH if is_overdue else Notification.Priority.NORMAL,
+                    'related_url': f'/crops/tracker/{reminder.crop_id}/' if reminder.crop_id else '/crops/tracker/',
+                },
+            )
+            if created:
+                result.reminder_notifications_sent += 1
+        except Exception as exc:
+            err_msg = f'Failed notifying user {user.username} about reminder {reminder.pk}: {exc}'
+            logger.error(err_msg)
+            result.errors.append(err_msg)
 
 
 def _process_data_cleanup(result: AutomationResult):

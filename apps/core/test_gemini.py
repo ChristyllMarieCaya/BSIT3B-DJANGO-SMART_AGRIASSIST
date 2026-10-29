@@ -82,6 +82,13 @@ class AuthenticatedChatViewTests(TestCase):
         )
         self.client.force_login(self.user)
 
+    def test_assistant_header_uses_brand_seedling_mark(self):
+        response = self.client.get(reverse('ai_assistant'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="dh-brand-mark chat-assistant-mark"')
+        self.assertContains(response, 'fa-solid fa-seedling')
+        self.assertNotContains(response, 'fa-robot fa-lg')
+
     def test_chat_stores_conversation_and_reply(self):
         reply = 'Advice stored and returned.'
         original = core_views.generate_reply
@@ -209,11 +216,26 @@ class ConversationHistoryTests(TestCase):
         )
         self.assertEqual(messages_response.status_code, 404)
 
-        messages_response = self.client.post(
+        chat_response = self.client.post(
             reverse('chat'),
             {'message': 'Hello!', 'conversation_id': conversation.pk},
         )
-        self.assertEqual(messages_response.status_code, 404)
+        self.assertEqual(chat_response.status_code, 404)
+
+    def test_owner_can_delete_conversation_and_messages(self):
+        conversation = Conversation.objects.create(owner=self.user)
+        Message.objects.create(conversation=conversation, sender=self.user, body='Remove this chat.')
+        response = self.client.post(reverse('chat_delete_conversation', args=[conversation.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'success', 'deleted_id': conversation.pk})
+        self.assertFalse(Conversation.objects.filter(pk=conversation.pk).exists())
+        self.assertFalse(Message.objects.filter(conversation_id=conversation.pk).exists())
+
+    def test_user_cannot_delete_another_users_conversation(self):
+        conversation = Conversation.objects.create(owner=self.other_user)
+        response = self.client.post(reverse('chat_delete_conversation', args=[conversation.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Conversation.objects.filter(pk=conversation.pk).exists())
 
 
 @override_settings(DEBUG=False)

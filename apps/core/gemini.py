@@ -683,6 +683,34 @@ def save_crop_diagnosis_from_reply(user, conversation, user_message, reply_text,
             technician_advice='Consult local municipal agricultural extension technician for certified confirmation.',
             is_confirmed=False,
         )
+
+        try:
+            from apps.info.models import Notification
+            pref = getattr(user, 'preference', None)
+            if not pref or pref.ai_analysis_notifications_enabled:
+                Notification.objects.create(
+                    user=user,
+                    title=f"🔬 AI Analysis: {crop_name} Diagnostic Complete",
+                    message=f"Plant health image analysis completed for {crop_name}. Suspected: {possible_disease} (Confidence: {confidence_level}).",
+                    category=Notification.Category.AI_ANALYSIS,
+                    priority=Notification.Priority.NORMAL,
+                    related_url=f"/diagnoses/{diagnosis.pk}/",
+                    deduplication_key=f"diag_ai_{diagnosis.pk}",
+                )
+            if not pref or pref.pest_disease_advisories_enabled:
+                if possible_disease and 'healthy' not in possible_disease.lower():
+                    Notification.objects.create(
+                        user=user,
+                        title=f"⚠️ Disease Advisory: {possible_disease}",
+                        message=f"{possible_disease} identified on {crop_name}. Review treatment precautions and preventive measures.",
+                        category=Notification.Category.PEST_DISEASE,
+                        priority=Notification.Priority.HIGH,
+                        related_url=f"/diagnoses/{diagnosis.pk}/",
+                        deduplication_key=f"diag_pest_{diagnosis.pk}",
+                    )
+        except Exception as n_exc:
+            logger.warning('Failed to create diagnostic notifications: %s', n_exc)
+
         return diagnosis
     except Exception as exc:
         logger.warning('Failed to record CropDiagnosis: %s', exc)

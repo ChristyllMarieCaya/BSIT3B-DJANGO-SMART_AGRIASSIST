@@ -53,6 +53,49 @@ class NotificationManagementTests(TestCase):
         self.assertEqual([item['id'] for item in response.json()['notifications']], [self.unread.pk])
         self.assertEqual(response.json()['unread_count'], 1)
 
+    def test_count_only_endpoint_is_user_scoped_and_tracks_read_state(self):
+        response = self.client.get(self.api_url, {'count_only': '1'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'unread_count': 1})
+
+        self.client.post(self.api_url, {
+            'action': 'mark_read',
+            'notification_id': self.unread.pk,
+        })
+        response = self.client.get(self.api_url, {'count_only': '1'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'unread_count': 0})
+
+    def test_notifications_page_renders_user_badge_count(self):
+        response = self.client.get(reverse('notifications'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['unread_count'], 1)
+        self.assertContains(response, 'data-notification-unread')
+        self.assertContains(response, '1 unread notifications')
+
+    def test_sidebar_badge_hides_at_zero_and_caps_large_counts(self):
+        self.unread.read = True
+        self.unread.save(update_fields=['read'])
+        response = self.client.get(reverse('notifications'))
+
+        self.assertContains(response, 'class="badge bg-danger ms-2 d-none"')
+
+        Notification.objects.bulk_create([
+            Notification(
+                user=self.user,
+                title=f'Alert {index}',
+                message='Farm update.',
+            )
+            for index in range(100)
+        ])
+        response = self.client.get(reverse('notifications'))
+
+        self.assertEqual(response.context['unread_count'], 100)
+        self.assertContains(response, '99+')
+
     def test_mark_read_is_idempotent_and_sets_read_timestamp(self):
         for _ in range(2):
             response = self.client.post(self.api_url, {

@@ -65,6 +65,8 @@ class Crop(models.Model):
     @property
     def growth_data(self):
         """Dynamic growth calculation evaluated against today's date."""
+        if not self.planting_date:
+            return {}
         return calculate_crop_growth(
             crop_name=self.crop_name,
             planting_date=self.planting_date,
@@ -74,6 +76,8 @@ class Crop(models.Model):
 
     @property
     def days_since_planting(self) -> int:
+        if not self.planting_date:
+            return 0
         return (date.today() - self.planting_date).days
 
     @property

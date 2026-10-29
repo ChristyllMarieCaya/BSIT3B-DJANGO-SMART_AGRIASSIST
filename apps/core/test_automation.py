@@ -10,7 +10,7 @@ from django.test import TestCase
 from apps.core.automation import run_all_agricultural_automations
 from apps.core.weather import evaluate_weather_risks
 from apps.crops.models import Crop, ScheduledReminder
-from apps.info.models import Notification, UserPreference, WeatherAlert
+from apps.info.models import Notification, UserPreference, WeatherAlert, WeatherRecord
 
 User = get_user_model()
 
@@ -105,10 +105,16 @@ class AgriculturalAutomationCycleTests(TestCase):
             title='Check nursery bed',
             due_date=date.today() - timedelta(days=2),
             status=ScheduledReminder.Status.PENDING,
+            is_automated=False,
         )
 
     @patch('apps.core.automation.get_weather')
-    def test_automation_cycle_creates_alerts_and_updates_reminders(self, mock_weather):
+    @patch('apps.core.automation.get_weather_history', return_value={'available': True, 'daily': {}})
+    def test_automation_cycle_creates_alerts_and_updates_reminders(
+        self,
+        mock_history,
+        mock_weather,
+    ):
         mock_weather.return_value = {
             'available': True,
             'source': 'Mock OpenWeather',
@@ -148,7 +154,8 @@ class AgriculturalAutomationCycleTests(TestCase):
         self.assertEqual(self.past_reminder.status, ScheduledReminder.Status.OVERDUE)
 
     @patch('apps.core.automation.get_weather')
-    def test_duplicate_alert_prevention(self, mock_weather):
+    @patch('apps.core.automation.get_weather_history', return_value={'available': True, 'daily': {}})
+    def test_duplicate_alert_prevention(self, mock_history, mock_weather):
         mock_weather.return_value = {
             'available': True,
             'source': 'Mock OpenWeather',
@@ -173,9 +180,90 @@ class AgriculturalAutomationCycleTests(TestCase):
         self.assertTrue(res2.duplicate_alerts_skipped >= 1)
         self.assertEqual(WeatherAlert.objects.filter(user=self.user).count(), initial_alerts_count)
 
-    def test_management_command_execution(self):
+    @patch('apps.core.automation.get_weather', return_value={'available': False})
+    @patch('apps.core.automation.geocode_location', return_value=None)
+    @patch('apps.core.automation.get_weather_history')
+    def test_management_command_execution(self, mock_history, mock_geocode, mock_weather):
         out = StringIO()
         call_command('run_agricultural_automations', '--once', stdout=out)
         output = out.getvalue()
         self.assertIn('SMART Agricultural Automation Engine initialized', output)
         self.assertIn('Completed in', output)
+
+    @patch('apps.core.automation.get_weather_history')
+    @patch('apps.core.automation.evaluate_weather_risks', return_value=[])
+    @patch('apps.core.automation.geocode_location', return_value={
+        'latitude': 16.9,
+        'longitude': 121.7,
+        'timezone': 'Asia/Manila',
+    })
+    @patch('apps.core.automation.get_weather', return_value={
+        'available': True,
+        'current': {'temperature': 28.0, 'humidity': 70, 'wind_speed': 5.0, 'rain_1h': 0.0},
+        'forecast': [],
+    })
+    def test_automation_saves_daily_weather_history_idempotently_and_preserves_manual_records(
+        self,
+        mock_weather,
+        mock_geocode,
+        mock_risks,
+        mock_history,
+    ):
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+        manual_record = WeatherRecord.objects.create(
+            owner=self.user,
+            location='Cauayan, Isabela',
+            recorded_on=yesterday,
+            temperature=25.0,
+            rainfall=3.0,
+            notes='Manual observation',
+        )
+        mock_history.return_value = {
+            'available': True,
+            'daily': {
+                today.isoformat(): {'temperature': 29.5, 'rainfall': 1.2},
+                yesterday.isoformat(): {'temperature': 27.0, 'rainfall': 8.0},
+            },
+        }
+
+        first_result = run_all_agricultural_automations(target_user=self.user)
+        automated_record = WeatherRecord.objects.get(
+            owner=self.user,
+            location='Cauayan, Isabela',
+            recorded_on=today,
+        )
+        self.assertEqual(float(automated_record.temperature), 29.5)
+        self.assertEqual(float(automated_record.rainfall), 1.2)
+        self.assertEqual(automated_record.notes, 'Automatically synced from Open-Meteo.')
+        self.assertEqual(first_result.weather_records_synced, 1)
+
+        manual_record.refresh_from_db()
+        self.assertEqual(float(manual_record.temperature), 25.0)
+        self.assertEqual(float(manual_record.rainfall), 3.0)
+
+        second_result = run_all_agricultural_automations(target_user=self.user)
+        self.assertEqual(second_result.weather_records_synced, 0)
+        self.assertEqual(mock_history.call_count, 1)
+
+    @patch('apps.core.automation._process_weather_automations')
+    def test_upcoming_automated_reminder_notifies_once_without_duplicates(self, mock_weather):
+        run_all_agricultural_automations(target_user=self.user)
+        run_all_agricultural_automations(target_user=self.user)
+
+        self.assertEqual(
+            Notification.objects.filter(
+                user=self.user,
+                category=Notification.Category.CROP_CARE,
+                deduplication_key__startswith='scheduled_crop_reminder_',
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            ScheduledReminder.objects.filter(
+                crop=self.crop,
+                title='Rice: Tillering & Vegetative Growth Monitoring',
+                activity_type=ScheduledReminder.ActivityType.GROWTH_MONITORING,
+            ).count(),
+            1,
+        )

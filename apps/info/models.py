@@ -16,6 +16,7 @@ class UserPreference(models.Model):
     class Theme(models.TextChoices):
         LIGHT = 'light', 'Light'
         DARK = 'dark', 'Dark'
+        SYSTEM = 'system', 'System default'
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -29,13 +30,17 @@ class UserPreference(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     # General Preferences
+    country = models.CharField(max_length=100, default='Philippines', blank=True)
     preferred_language = models.CharField(max_length=10, default='en')
     timezone = models.CharField(max_length=50, default='Asia/Manila')
+    farm_timezone = models.CharField(max_length=50, default='Asia/Manila', blank=True)
     measurement_units = models.CharField(max_length=10, default='metric')
     temperature_unit = models.CharField(
         max_length=10, choices=TemperatureUnit.choices, default=TemperatureUnit.CELSIUS
     )
     forecast_days = models.PositiveSmallIntegerField(default=5)
+    weather_last_updated = models.DateTimeField(null=True, blank=True)
+    weather_history_last_synced = models.DateTimeField(null=True, blank=True)
 
     # AI Assistant Preferences
     ai_response_language = models.CharField(max_length=10, default='en')
@@ -114,7 +119,8 @@ class WeatherAlert(models.Model):
     expected_timing = models.CharField(max_length=255, blank=True)
     agricultural_impact = models.TextField()
     precautionary_actions = models.TextField()
-    source = models.CharField(max_length=150, default='OpenWeatherMap / Official Agro-Met')
+    source = models.CharField(max_length=150, default='Open-Meteo Forecast Alert')
+    is_official = models.BooleanField(default=False)
     deduplication_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

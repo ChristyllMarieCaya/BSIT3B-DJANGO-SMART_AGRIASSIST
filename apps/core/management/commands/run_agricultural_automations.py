@@ -34,6 +34,7 @@ class Command(BaseCommand):
                 f"{data['users_processed']} users processed, "
                 f"{data['weather_alerts_generated']} alerts generated, "
                 f"{data['reminders_generated']} reminders generated, "
+                f"{data['reminder_notifications_sent']} reminder notifications sent, "
                 f"{data['errors_count']} errors."
             ))
             return
@@ -46,7 +47,9 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"[{data['completed_at']}] Cycle finished ({data['duration_seconds']}s): "
                     f"Users: {data['users_processed']}, Alerts: {data['weather_alerts_generated']}, "
-                    f"Reminders: {data['reminders_generated']}, Errors: {data['errors_count']}"
+                    f"Reminders: {data['reminders_generated']}, "
+                    f"Reminder notifications: {data['reminder_notifications_sent']}, "
+                    f"Errors: {data['errors_count']}"
                 )
                 time.sleep(interval)
         except KeyboardInterrupt:
