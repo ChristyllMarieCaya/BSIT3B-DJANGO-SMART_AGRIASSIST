@@ -24,9 +24,23 @@ try:
 
     load_dotenv(BASE_DIR / '.env', override=False)
 except ImportError:
-    # python-dotenv is not installed; environment variables must be set
-    # manually or via the hosting platform.
     pass
+
+# Direct fallback parser to guarantee .env values are always in os.environ
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    try:
+        with open(env_path, 'r', encoding='utf-8') as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if _line and not _line.startswith('#') and '=' in _line:
+                    _k, _v = _line.split('=', 1)
+                    _k = _k.strip()
+                    _v = _v.strip().strip('"\'')
+                    if _k and _k not in os.environ:
+                        os.environ[_k] = _v
+    except Exception:
+        pass
 
 
 # Quick-start development settings - unsuitable for production
@@ -40,7 +54,17 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://10.204.124.12:8000',
+    'https://*.loca.lt',
+    'https://*.trycloudflare.com',
+    'https://*.ngrok-free.app',
+    'https://*.ngrok.io',
+]
 
 
 # Application definition
@@ -65,6 +89,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.core.middleware.UserTimezoneMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -77,11 +102,15 @@ TEMPLATES = [
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
+            'libraries': {
+                'admin_filter_tags': 'apps.core.templatetags.admin_filter_tags',
+            },
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.unread_notifications',
+                'apps.core.context_processors.admin_sidebar_counts',
             ],
         },
     },
@@ -171,8 +200,20 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/home/'
 LOGOUT_REDIRECT_URL = '/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# External Services & APIs
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '')
+
+
+# External Services & APIs
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '')

@@ -18,8 +18,22 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from apps.core.admin_portal import (
+    admin_notifications_status_view,
+    admin_notifications_view,
+    admin_settings_view,
+    admin_weather_view,
+    admin_user_portfolio_view,
+    admin_ai_assistant_view,
+)
 
 urlpatterns = [
+    path('admin/notifications/', admin_notifications_view, name='admin_notifications'),
+    path('admin/notifications/status/', admin_notifications_status_view, name='admin_notifications_status'),
+    path('admin/weather/', admin_weather_view, name='admin_weather'),
+    path('admin/settings/', admin_settings_view, name='admin_settings'),
+    path('admin/users/<int:user_id>/', admin_user_portfolio_view, name='admin_user_portfolio'),
+    path('admin/ai-assistant/', admin_ai_assistant_view, name='admin_ai_assistant'),
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
     path('info/', include('apps.info.urls')),
