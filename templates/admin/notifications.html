@@ -1,0 +1,120 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Notification Center | Smart AgriAssist Admin{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'admin:index' %}">Admin</a>
+<span>&rsaquo;</span>
+<span class="admin-topbar-crumb fw-semibold">Notification Center</span>
+{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<section class="admin-page-shell">
+  <header class="admin-page-header">
+    <div>
+      <div class="admin-page-eyebrow">System activity</div>
+      <h1 class="admin-page-heading">Notification Center</h1>
+      <p class="text-muted mb-0">Review system notifications and weather alerts without changing their source records.</p>
+    </div>
+    <a class="btn btn-outline-success" href="{% url 'admin_weather' %}">
+      <i class="fa-solid fa-cloud-bolt me-1" aria-hidden="true"></i> Weather &amp; Alerts
+    </a>
+  </header>
+
+  <div class="admin-summary-grid" aria-label="Notification summary">
+    <article class="admin-summary-card">
+      <span class="admin-summary-label">Unread notifications</span>
+      <strong>{{ unread_notification_count }}</strong>
+    </article>
+    <article class="admin-summary-card">
+      <span class="admin-summary-label">Active weather alerts</span>
+      <strong>{{ active_weather_count }}</strong>
+    </article>
+    <article class="admin-summary-card">
+      <span class="admin-summary-label">Critical weather alerts</span>
+      <strong>{{ critical_weather_count }}</strong>
+    </article>
+  </div>
+
+  <nav class="admin-notification-filters" aria-label="Filter notifications">
+    {% for value, label in filter_choices %}
+      <a href="?filter={{ value }}" {% if filter_name == value %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="admin-notification-list">
+    {% for item in notifications %}
+      <article class="admin-notification-item {% if not item.is_read %}is-unread{% endif %}">
+        <div class="admin-notification-severity severity-{{ item.severity_key|slugify }}" aria-hidden="true">
+          {% if item.kind == 'weather' %}
+            <i class="fa-solid fa-cloud-bolt"></i>
+          {% else %}
+            <i class="fa-solid fa-bell"></i>
+          {% endif %}
+        </div>
+        <div class="admin-notification-content">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+              <h2 class="admin-notification-title">{{ item.title }}</h2>
+              <div class="admin-notification-meta">
+                <span>{{ item.kind|capfirst }}</span>
+                <span class="admin-notification-dot" aria-hidden="true"></span>
+                <span>{{ item.severity }}</span>
+                <span class="admin-notification-dot" aria-hidden="true"></span>
+                <span>{{ item.username }}</span>
+                {% if item.location %}
+                  <span class="admin-notification-dot" aria-hidden="true"></span>
+                  <span>{{ item.location }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <span class="admin-notification-status">
+              {% if item.kind == 'weather' %}
+                {% if item.is_active %}Active{% else %}Resolved{% endif %}
+              {% elif item.is_read %}Read{% else %}Unread{% endif %}
+            </span>
+          </div>
+          <p class="admin-notification-description">{{ item.description }}</p>
+          <div class="admin-notification-footer">
+            <time datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|date:"M j, Y, g:i a" }}</time>
+            <div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-success" href="{{ item.url }}">View details</a>
+              {% if item.kind == 'notification' %}
+                <form method="post" class="m-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="kind" value="notification">
+                  <input type="hidden" name="record_id" value="{{ item.record_id }}">
+                  <input type="hidden" name="filter" value="{{ filter_name }}">
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Dismiss for this session</button>
+                </form>
+              {% elif item.is_active %}
+                <span class="small text-muted">Active until resolved</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="admin-empty-state">
+        <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>
+        <h2>No notifications to show</h2>
+        <p class="mb-0">There are no records matching this filter.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if notifications.has_other_pages %}
+    <nav class="admin-notification-pagination" aria-label="Notification pages">
+      {% if notifications.has_previous %}
+        <a href="?filter={{ filter_name }}&amp;page={{ notifications.previous_page_number }}">Previous</a>
+      {% endif %}
+      <span>Page {{ notifications.number }} of {{ notifications.paginator.num_pages }}</span>
+      {% if notifications.has_next %}
+        <a href="?filter={{ filter_name }}&amp;page={{ notifications.next_page_number }}">Next</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</section>
+{% endblock %}

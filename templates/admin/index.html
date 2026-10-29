@@ -1,0 +1,766 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Dashboard | Smart AgriAssist Admin{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 admin-dashboard">
+
+  <!-- 1. Page Header with Welcome & Quick Actions -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-success px-2 py-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">SYSTEM OVERVIEW</span>
+        <span class="text-muted small">&bull; Real-time Agricultural Telemetry</span>
+      </div>
+      <h1 class="h2 fw-bold admin-heading mb-1">
+        Welcome, {{ user.first_name|default:user.username }}
+      </h1>
+      <p class="text-muted mb-0 small" style="max-width: 650px;">
+        Monitor municipal farm land, farmer crop lifecycles, real-time AI disease diagnoses, and severe agro-meteorological advisories.
+      </p>
+    </div>
+
+    <!-- Quick Action Buttons -->
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'admin:crops_crop_add' %}" class="btn btn-success shadow-sm d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-plus"></i>
+        <span>Register Crop</span>
+      </a>
+      <a href="{% url 'admin:info_weatheralert_add' %}" class="btn btn-outline-warning d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-cloud-bolt"></i>
+        <span>Issue Weather Alert</span>
+      </a>
+      <a href="{% url 'admin:auth_user_add' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>New User</span>
+      </a>
+    </div>
+  </div>
+
+  {% if active_weather_count %}
+  <section class="admin-weather-summary mb-3" aria-labelledby="weatherSummaryTitle">
+    <div class="admin-weather-summary-head">
+      <div>
+        <h2 id="weatherSummaryTitle" class="admin-weather-summary-title">
+          <i class="fa-solid fa-cloud-bolt" aria-hidden="true"></i> Weather Alerts
+        </h2>
+        <p class="mb-0 text-muted small">
+          <strong data-admin-active-alert-count>{{ active_weather_count }}</strong> active
+          <span aria-hidden="true">&bull;</span>
+          <strong data-admin-critical-alert-count>{{ active_critical_weather_count }}</strong> critical
+        </p>
+      </div>
+      <a href="{% url 'admin_weather' %}" class="btn btn-sm btn-outline-success">View all alerts <span aria-hidden="true">&rarr;</span></a>
+    </div>
+    {% for alert in active_weather_alerts %}
+    <div class="admin-weather-alert-preview">
+      <span class="admin-weather-severity severity-{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+      <div class="min-w-0">
+        <strong>{{ alert.title }}</strong>
+        <div class="small text-muted">{{ alert.farm_location }} &bull; {{ alert.created_at|date:"M j, Y, g:i a" }}</div>
+      </div>
+      <a href="{% url 'admin_weather' %}?location={{ alert.farm_location|urlencode }}" class="small text-success ms-auto">Details</a>
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% if unread_notifications %}
+  <div class="admin-unread-summary mb-3">
+    <i class="fa-regular fa-bell" aria-hidden="true"></i>
+    <span><strong>{{ unread_notifications }}</strong> unread notification{{ unread_notifications|pluralize }}</span>
+    <a href="{% url 'admin_notifications' %}" class="ms-auto">Open Notification Center <span aria-hidden="true">&rarr;</span></a>
+  </div>
+  {% endif %}
+
+  <!-- Key operational statistics -->
+  <div class="row g-3 mb-4">
+    <!-- Active Crops -->
+    <div class="col-6 col-xl-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Active Growing Crops</div>
+        <div class="admin-stat-number text-success">{{ active_crops|default:0 }}</div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted"><strong>{{ active_area_ha }} ha</strong> planted area</span>
+          <a href="{% url 'admin:crops_crop_changelist' %}?status__exact=active" class="small text-success text-decoration-none">Manage &rarr;</a>
+        </div>
+        <div class="admin-stat-icon icon-leaf">
+          <i class="fa-solid fa-wheat-awn"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Registered Users -->
+    <div class="col-6 col-xl-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Registered Accounts</div>
+        <div class="admin-stat-number">{{ total_users|default:0 }}</div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted"><strong>{{ active_users }}</strong> active farmers</span>
+          <a href="{% url 'admin:auth_user_changelist' %}" class="small text-success text-decoration-none">View All &rarr;</a>
+        </div>
+        <div class="admin-stat-icon icon-users">
+          <i class="fa-solid fa-users"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Reminders -->
+    <div class="col-6 col-xl-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Pending Care Tasks</div>
+        <div class="admin-stat-number" style="color: #f59e0b;">{{ pending_reminders|default:0 }}</div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted"><strong>{{ completed_reminders }}</strong> completed</span>
+          <a href="{% url 'admin:crops_scheduledreminder_changelist' %}" class="small text-warning text-decoration-none">Review &rarr;</a>
+        </div>
+        <div class="admin-stat-icon icon-warn">
+          <i class="fa-regular fa-calendar-check"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active weather alerts -->
+    <div class="col-6 col-xl-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Active Weather Alerts</div>
+        <div class="admin-stat-number text-danger" data-admin-active-alert-count>{{ active_weather_count|default:0 }}</div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small text-muted"><strong data-admin-critical-alert-count>{{ active_critical_weather_count }}</strong> critical</span>
+          <a href="{% url 'admin_weather' %}" class="small text-danger text-decoration-none">Review &rarr;</a>
+        </div>
+        <div class="admin-stat-icon icon-alert">
+          <i class="fa-solid fa-cloud-bolt"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="admin-card mb-4" aria-labelledby="recentActivityTitle">
+    <div class="admin-card-header">
+      <h2 id="recentActivityTitle" class="admin-card-title"><i class="fa-solid fa-clock-rotate-left text-success" aria-hidden="true"></i>Recent system activity</h2>
+      <span class="small text-muted">{{ chart_start_date|date:"M j" }} – {{ chart_end_date|date:"M j, Y" }}</span>
+    </div>
+    <div class="admin-card-body p-0">
+      {% for activity in recent_activity|slice:":4" %}
+        <a class="activity-row" href="{{ activity.url }}">
+          <span class="activity-kind">{{ activity.kind }}</span>
+          <span class="activity-title">{{ activity.title }}</span>
+          <time class="activity-time" datetime="{{ activity.created_at|date:'c' }}">{{ activity.created_at|date:"M j, Y, g:i a" }}</time>
+        </a>
+      {% empty %}
+        <p class="text-muted small p-3 mb-0">No recent system activity.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <details class="admin-dashboard-details mb-4">
+    <summary>
+      <span><i class="fa-solid fa-chart-line me-2" aria-hidden="true"></i>Additional analytics and recent records</span>
+      <span class="small text-muted">Crop, AI, weather, account and care-task details</span>
+    </summary>
+    <div class="admin-dashboard-detail-content">
+
+  <!-- Secondary metrics -->
+  <div class="row g-3 mb-4">
+    <!-- Total Crops Lifecycle Breakdown -->
+    <div class="col-6 col-md-3">
+      <div class="p-3 rounded-3" style="background: var(--agri-card-bg); border: 1px solid var(--agri-border);">
+        <div class="small text-muted text-uppercase fw-semibold mb-1">Total Crops Tracked</div>
+        <div class="h3 fw-bold admin-heading mb-1">{{ total_crops|default:0 }}</div>
+        <div class="small text-muted">
+          <span class="text-success">{{ active_crops }} Active</span> &bull; 
+          <span class="text-primary">{{ harvested_crops }} Harvested</span> &bull; 
+          <span class="text-danger">{{ lost_crops }} Lost</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Cultivated Area -->
+    <div class="col-6 col-md-3">
+      <div class="p-3 rounded-3" style="background: var(--agri-card-bg); border: 1px solid var(--agri-border);">
+        <div class="small text-muted text-uppercase fw-semibold mb-1">Total Monitored Area</div>
+        <div class="h3 fw-bold admin-heading mb-1">{{ total_area_ha|default:"0.0" }} ha</div>
+        <div class="small text-muted">{{ total_area_sqm|floatformat:0 }} m² total agricultural land</div>
+      </div>
+    </div>
+
+    <!-- AI Gemini Integration -->
+    <div class="col-6 col-md-3">
+      <div class="p-3 rounded-3" style="background: var(--agri-card-bg); border: 1px solid var(--agri-border);">
+        <div class="small text-muted text-uppercase fw-semibold mb-1">Gemini AI Assistant</div>
+        <div class="h4 fw-bold mb-1 {% if ai_status.connected %}text-success{% else %}text-warning{% endif %}">
+          {% if ai_status.connected %}
+            <i class="fa-solid fa-circle-check me-1"></i> Connected
+          {% else %}
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ ai_status.state_message|truncatechars:18 }}
+          {% endif %}
+        </div>
+        <div class="small text-muted">Model: {{ ai_status.model_name|default:"gemini-3.5-flash" }}</div>
+      </div>
+    </div>
+
+    <!-- Unread Alerts -->
+    <div class="col-6 col-md-3">
+      <div class="p-3 rounded-3" style="background: var(--agri-card-bg); border: 1px solid var(--agri-border);">
+        <div class="small text-muted text-uppercase fw-semibold mb-1">Unread Alerts</div>
+        <div class="h3 fw-bold mb-1 {% if unread_notifications > 0 %}text-danger{% else %}text-muted{% endif %}">
+          {{ unread_notifications|default:0 }}
+        </div>
+        <div class="small text-muted">
+          <a href="{% url 'admin:info_notification_changelist' %}" class="text-success text-decoration-none">Inspect Notifications &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl">
+      <div class="admin-stat-card h-100">
+        <div class="admin-stat-label">Crop catalog</div>
+        <div class="admin-stat-number">{{ total_catalog_crops }}</div>
+        <div class="small text-muted">Active reference crops</div>
+        <div class="admin-stat-icon icon-leaf"><i class="fa-solid fa-book-open" aria-hidden="true"></i></div>
+      </div>
+    </div>
+    <div class="col-6 col-xl">
+      <div class="admin-stat-card h-100">
+        <div class="admin-stat-label">AI assistant usage</div>
+        <div class="admin-stat-number">{{ total_messages }}</div>
+        <div class="small text-muted">{{ total_image_messages }} image messages &bull; {{ total_diagnoses }} diagnoses</div>
+        <div class="admin-stat-icon icon-ai"><i class="fa-solid fa-robot" aria-hidden="true"></i></div>
+      </div>
+    </div>
+    <div class="col-6 col-xl">
+      <div class="admin-stat-card h-100">
+        <div class="admin-stat-label">Growth stage guides</div>
+        <div class="admin-stat-number">{{ growth_stage_references }}</div>
+        <div class="small text-muted">Reference-stage definitions</div>
+        <div class="admin-stat-icon icon-leaf"><i class="fa-solid fa-timeline" aria-hidden="true"></i></div>
+      </div>
+    </div>
+    <div class="col-6 col-xl">
+      <div class="admin-stat-card h-100">
+        <div class="admin-stat-label">Weather records</div>
+        <div class="admin-stat-number">{{ total_weather_records }}</div>
+        <div class="small text-muted">{{ active_weather_count }} active alerts</div>
+        <div class="admin-stat-icon icon-warn"><i class="fa-solid fa-cloud-sun-rain" aria-hidden="true"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="row g-3 mb-4" aria-label="Recent activity trends">
+    <div class="col-12 col-xl-8">
+      <article class="admin-card h-100">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title"><i class="fa-solid fa-chart-line text-success" aria-hidden="true"></i>Recent system activity</h2>
+          <span class="small text-muted">{{ chart_start_date|date:"M j" }} – {{ chart_end_date|date:"M j, Y" }}</span>
+        </div>
+        <div class="admin-card-body admin-chart-wrap">
+          <p class="chart-loading" id="activityChartLoading">Loading activity chart…</p>
+          <p class="chart-empty-state d-none" id="activityChartEmpty">No activity recorded in this period.</p>
+          <noscript><p class="chart-empty-state">Enable JavaScript to view interactive charts.</p></noscript>
+          <canvas id="activityChart" role="img" aria-label="Daily account, crop, and AI diagnosis activity"></canvas>
+        </div>
+      </article>
+    </div>
+    <div class="col-12 col-xl-4">
+      <article class="admin-card h-100">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title"><i class="fa-solid fa-chart-pie text-info" aria-hidden="true"></i>Crop lifecycle</h2>
+          <span class="small text-muted">Registered crops</span>
+        </div>
+        <div class="admin-card-body admin-chart-wrap">
+          <p class="chart-loading" id="cropChartLoading">Loading crop chart…</p>
+          <p class="chart-empty-state d-none" id="cropChartEmpty">No crop records yet.</p>
+          <noscript><p class="chart-empty-state">Enable JavaScript to view interactive charts.</p></noscript>
+          <canvas id="cropStatusChart" role="img" aria-label="Registered crops by lifecycle status"></canvas>
+        </div>
+      </article>
+    </div>
+    <div class="col-12 col-xl-6">
+      <article class="admin-card h-100">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title"><i class="fa-solid fa-temperature-half text-danger" aria-hidden="true"></i>Recorded temperature trend</h2>
+          <span class="small text-muted">°C daily average</span>
+        </div>
+        <div class="admin-card-body admin-chart-wrap">
+          <p class="chart-loading" id="temperatureChartLoading">Loading weather chart…</p>
+          <p class="chart-empty-state d-none" id="temperatureChartEmpty">No temperature measurements recorded in this period.</p>
+          <noscript><p class="chart-empty-state">Enable JavaScript to view interactive charts.</p></noscript>
+          <canvas id="temperatureTrendChart" role="img" aria-label="Historical daily average temperature"></canvas>
+        </div>
+      </article>
+    </div>
+    <div class="col-12 col-xl-6">
+      <article class="admin-card h-100">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title"><i class="fa-solid fa-cloud-rain text-info" aria-hidden="true"></i>Recorded rainfall trend</h2>
+          <span class="small text-muted">mm daily total</span>
+        </div>
+        <div class="admin-card-body admin-chart-wrap">
+          <p class="chart-loading" id="rainfallChartLoading">Loading weather chart…</p>
+          <p class="chart-empty-state d-none" id="rainfallChartEmpty">No rainfall measurements recorded in this period.</p>
+          <noscript><p class="chart-empty-state">Enable JavaScript to view interactive charts.</p></noscript>
+          <canvas id="rainfallTrendChart" role="img" aria-label="Historical daily rainfall"></canvas>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 4. Main Two-Column Analytics Layout -->
+  <div class="row g-4">
+    <!-- Left Column (65% width): Tables of Recent Crops, Diagnoses, Reminders -->
+    <div class="col-12 col-xl-8">
+
+      <!-- Recent Crop Registrations Table -->
+      <div class="admin-card mb-4">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">
+            <i class="fa-solid fa-wheat-awn text-success"></i>
+            Recent Crop Registrations
+          </h3>
+          <a href="{% url 'admin:crops_crop_changelist' %}" class="small text-success text-decoration-none fw-semibold">
+            View All Crops ({{ total_crops }}) &rarr;
+          </a>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Crop &amp; Variety</th>
+                <th>Farmer</th>
+                <th>Farm Location / Field</th>
+                <th>Area</th>
+                <th>Growth Progress</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for crop in recent_crops %}
+              <tr>
+                <td>
+                  <a href="{% url 'admin:crops_crop_change' crop.pk %}" class="fw-bold text-decoration-none admin-link">
+                    {{ crop.crop_name|capfirst }}
+                  </a>
+                  {% if crop.variety %}
+                    <div class="text-muted small">{{ crop.variety }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="text-muted">{{ crop.owner.username }}</span>
+                </td>
+                <td>
+                  <span>{{ crop.farm_location|default:"-" }}</span>
+                  {% if crop.field_name %}
+                    <div class="text-muted small">{{ crop.field_name }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if crop.area_sqm %}
+                    <span class="badge bg-secondary-lt text-secondary">{{ crop.area_sqm|floatformat:0 }} m²</span>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td style="min-width: 140px;">
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="flex-grow-1" style="height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden;">
+                      <div style="width: {{ crop.overall_progress|default:0 }}%; height: 100%; background: var(--agri-accent);"></div>
+                    </div>
+                    <span class="small fw-bold" style="font-size: 0.72rem;">{{ crop.overall_progress|floatformat:0 }}%</span>
+                  </div>
+                  <div class="text-muted small" style="font-size: 0.7rem;">{{ crop.current_stage_name }}</div>
+                </td>
+                <td>
+                  {% if crop.status == 'active' %}
+                    <span class="badge bg-success">ACTIVE</span>
+                  {% elif crop.status == 'harvested' %}
+                    <span class="badge bg-primary">HARVESTED</span>
+                  {% elif crop.status == 'lost' %}
+                    <span class="badge bg-danger">LOST</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">PLANNED</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'admin:crops_crop_change' crop.pk %}" class="btn btn-sm btn-outline-success py-1 px-2" title="Edit in Admin">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  No crops registered yet. <a href="{% url 'admin:crops_crop_add' %}" class="text-success">Register the first crop &rarr;</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Crop Diagnoses Table -->
+      <div class="admin-card mb-4">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">
+            <i class="fa-solid fa-stethoscope text-info"></i>
+            Recent AI Pest &amp; Disease Diagnoses
+          </h3>
+          <a href="{% url 'admin:core_cropdiagnosis_changelist' %}" class="small text-info text-decoration-none fw-semibold">
+            All Diagnoses ({{ total_diagnoses }}) &rarr;
+          </a>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Crop</th>
+                <th>Farmer</th>
+                <th>Possible Disease / Issue</th>
+                <th>Confidence</th>
+                <th>Verification</th>
+                <th>Date Logged</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in recent_diagnoses %}
+              <tr>
+                <td class="fw-bold">{{ d.crop_name|capfirst|default:"Field Plant" }}</td>
+                <td class="text-muted">{{ d.user.username }}</td>
+                <td>
+                  <span>{{ d.possible_disease }}</span>
+                </td>
+                <td>
+                  <span class="badge" style="background: rgba(14,165,233,0.15); color: #38bdf8;">{{ d.confidence_level }}</span>
+                </td>
+                <td>
+                  {% if d.is_confirmed %}
+                    <span class="badge bg-success">Verified</span>
+                  {% else %}
+                    <span class="badge bg-secondary-lt text-muted">Unconfirmed</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ d.created_at|date:"M j, Y" }}</td>
+                <td>
+                  <a href="{% url 'admin:core_cropdiagnosis_change' d.pk %}" class="btn btn-sm btn-outline-secondary py-1 px-2">
+                    <i class="fa-solid fa-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  No disease diagnoses logged yet.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Upcoming Scheduled Farm Reminders -->
+      <div class="admin-card mb-4">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">
+            <i class="fa-regular fa-clock text-warning"></i>
+            Upcoming Field Reminders &amp; Care Schedules
+          </h3>
+          <a href="{% url 'admin:crops_scheduledreminder_changelist' %}" class="small text-warning text-decoration-none fw-semibold">
+            All Reminders &rarr;
+          </a>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Activity Title</th>
+                <th>Farmer</th>
+                <th>Crop</th>
+                <th>Type</th>
+                <th>Due Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in upcoming_reminders %}
+              <tr>
+                <td class="fw-semibold">
+                  <a href="{% url 'admin:crops_scheduledreminder_change' r.pk %}" class="text-decoration-none admin-link">
+                    {{ r.title }}
+                  </a>
+                </td>
+                <td class="text-muted">{{ r.user.username }}</td>
+                <td>{{ r.crop.crop_name|default:"-" }}</td>
+                <td>
+                  <span class="badge bg-secondary-lt text-secondary">{{ r.get_activity_type_display }}</span>
+                </td>
+                <td>
+                  <span>{{ r.due_date|date:"M j, Y" }}</span>
+                  {% if r.is_overdue %}
+                    <span class="badge bg-danger ms-1">OVERDUE</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-warning text-dark">{{ r.get_status_display }}</span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                  No upcoming reminders scheduled.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column (35% width): Weather, Locations, User Accounts, Standard Model Registry -->
+    <div class="col-12 col-xl-4">
+
+      <!-- Monitored Farm Locations -->
+      <div class="admin-card mb-4">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">
+            <i class="fa-solid fa-map-location-dot text-success"></i>
+            Monitored Farm Locations
+          </h3>
+        </div>
+        <div class="admin-card-body p-3">
+          {% if farm_locations %}
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              {% for loc in farm_locations %}
+              <span class="badge px-3 py-2 text-success" style="background: var(--agri-accent-subtle); border: 1px solid var(--agri-border); font-size: 0.8rem;">
+                <i class="fa-solid fa-location-dot text-success me-1"></i> {{ loc }}
+              </span>
+              {% endfor %}
+            </div>
+            <p class="text-muted small mb-0 mt-3" style="font-size: 0.75rem;">
+              Local weather telemetry and severe agro-hazard alerts are continuously monitored for these municipalities.
+            </p>
+          {% else %}
+            <p class="text-muted small mb-0">No specific farm locations registered yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recent User Registrations -->
+      <div class="admin-card mb-4">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">
+            <i class="fa-solid fa-user-plus text-primary"></i>
+            Recently Registered Accounts
+          </h3>
+          <a href="{% url 'admin:auth_user_changelist' %}" class="small text-primary text-decoration-none fw-semibold">
+            Manage &rarr;
+          </a>
+        </div>
+        <div class="admin-card-body p-0">
+          <ul class="list-group list-group-flush" style="background: transparent;">
+            {% for u in recent_users %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                style="background: transparent; border-color: var(--agri-border);">
+              <div class="d-flex align-items-center gap-2">
+                <div class="admin-user-avatar" style="width: 1.8rem; height: 1.8rem; font-size: 0.75rem;">
+                  {{ u.username|first|upper }}
+                </div>
+                <div>
+                  <a href="{% url 'admin:auth_user_change' u.pk %}" class="fw-semibold small text-decoration-none admin-link">
+                    {{ u.username }}
+                  </a>
+                  <div class="text-muted" style="font-size: 0.7rem;">{{ u.email|default:"No email provided" }}</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <a href="{% url 'admin:auth_user_password_change' u.pk %}" class="btn btn-sm btn-outline-warning py-0 px-1" title="Change Password" style="font-size: 0.72rem;">
+                  <i class="fa-solid fa-key"></i>
+                </a>
+                <a href="{% url 'admin:auth_user_delete' u.pk %}" class="btn btn-sm btn-outline-danger py-0 px-1" title="Delete User" style="font-size: 0.72rem;">
+                  <i class="fa-solid fa-trash"></i>
+                </a>
+                <span class="badge bg-secondary-lt text-muted ms-1" style="font-size: 0.7rem;">
+                  {{ u.date_joined|date:"M j" }}
+                </span>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Quick Directory of Django Model Administrations -->
+      <div class="admin-card mb-4">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">
+            <i class="fa-solid fa-database text-mint"></i>
+            Django Model Registry
+          </h3>
+        </div>
+        <div class="admin-card-body p-0">
+          {% if app_list %}
+            <div class="accordion" id="appAccordion" style="background: transparent;">
+              {% for app in app_list %}
+              <div class="border-bottom" style="border-color: var(--agri-border) !important;">
+                <div class="p-3 d-flex justify-content-between align-items-center">
+                  <span class="fw-bold small text-uppercase admin-heading" style="letter-spacing: 0.05em;">
+                    {{ app.name }}
+                  </span>
+                  <span class="badge bg-secondary-lt text-muted">{{ app.models|length }} models</span>
+                </div>
+                <div class="px-3 pb-2">
+                  {% for model in app.models %}
+                  <div class="d-flex justify-content-between align-items-center py-1">
+                    {% if model.admin_url %}
+                      <a href="{{ model.admin_url }}" class="text-muted small text-decoration-none hover-white">
+                        {{ model.name }}
+                      </a>
+                    {% else %}
+                      <span class="text-muted small">{{ model.name }}</span>
+                    {% endif %}
+
+                    {% if model.add_url %}
+                      <a href="{{ model.add_url }}" class="badge bg-success-lt text-success text-decoration-none py-1 px-2" title="Add new">
+                        + Add
+                      </a>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted p-3 mb-0 small">No apps registered in administration.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+    </div>
+  </details>
+
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+{% endblock %}
+
+{% block extra_js %}
+{{ chart_data|json_script:"adminDashboardChartData" }}
+<script>
+(function () {
+  function initializeCharts() {
+    var node = document.getElementById('adminDashboardChartData');
+    if (!node) return;
+    var data = JSON.parse(node.textContent);
+    if (window.Chart) {
+      window.Chart.defaults.color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--agri-text-muted').trim();
+    }
+
+    function showEmpty(canvasId, emptyId, values) {
+      var canvas = document.getElementById(canvasId);
+      var empty = document.getElementById(emptyId);
+      var hasValues = values.some(function (value) { return value !== null && value > 0; });
+      if (!hasValues || !window.Chart) {
+        canvas.classList.add('d-none');
+        empty.textContent = window.Chart ? empty.textContent : 'Charts could not load; summary values remain available above.';
+        empty.classList.remove('d-none');
+        return false;
+      }
+      return true;
+    }
+
+    document.querySelectorAll('.chart-loading').forEach(function (loading) {
+      loading.classList.add('d-none');
+    });
+
+    if (showEmpty('activityChart', 'activityChartEmpty', data.users.concat(data.crops, data.diagnoses, data.messages))) {
+      new Chart(document.getElementById('activityChart'), {
+        type: 'line',
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label: 'New accounts', data: data.users, borderColor: '#15803d', backgroundColor: '#15803d22', fill: true, tension: 0.25 },
+            { label: 'Crop registrations', data: data.crops, borderColor: '#0284c7', backgroundColor: '#0284c722', fill: true, tension: 0.25 },
+            { label: 'AI diagnoses', data: data.diagnoses, borderColor: '#d97706', backgroundColor: '#d9770622', fill: true, tension: 0.25 },
+            { label: 'Assistant messages', data: data.messages, borderColor: '#9333ea', backgroundColor: '#9333ea22', fill: true, tension: 0.25 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+    }
+
+    if (showEmpty('cropStatusChart', 'cropChartEmpty', data.crop_status.values)) {
+      new Chart(document.getElementById('cropStatusChart'), {
+        type: 'doughnut',
+        data: { labels: data.crop_status.labels, datasets: [{ data: data.crop_status.values, backgroundColor: ['#15803d', '#d97706', '#0284c7', '#dc2626'] }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function drawWeather(canvasId, emptyId, values, label, color, unit) {
+      var canvas = document.getElementById(canvasId);
+      var empty = document.getElementById(emptyId);
+      var loading = document.getElementById(canvasId === 'temperatureTrendChart' ? 'temperatureChartLoading' : 'rainfallChartLoading');
+      loading.classList.add('d-none');
+      if (!values.some(function (value) { return value !== null; })) {
+        canvas.classList.add('d-none');
+        empty.classList.remove('d-none');
+        return;
+      }
+      if (!window.Chart) {
+        canvas.classList.add('d-none');
+        empty.textContent = 'Charts could not load; summary values remain available above.';
+        empty.classList.remove('d-none');
+        return;
+      }
+      new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: { labels: data.weather.labels, datasets: [{ label: label, data: values, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.25, spanGaps: false }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          scales: { y: { title: { display: true, text: unit }, beginAtZero: unit === 'mm' }, x: { ticks: { maxTicksLimit: 10 } } }
+        }
+      });
+    }
+    drawWeather('temperatureTrendChart', 'temperatureChartEmpty', data.weather.temperature, 'Temperature', '#dc2626', '°C');
+    drawWeather('rainfallTrendChart', 'rainfallChartEmpty', data.weather.rainfall, 'Rainfall', '#0284c7', 'mm');
+
+    document.addEventListener('admin-theme-changed', function () {
+      if (!window.Chart) return;
+      window.Chart.defaults.color = getComputedStyle(document.documentElement)
+        .getPropertyValue('--agri-text-muted').trim();
+      Object.values(window.Chart.instances).forEach(function (chart) {
+        Object.values(chart.options.scales || {}).forEach(function (scale) {
+          scale.ticks.color = window.Chart.defaults.color;
+          scale.grid.color = getComputedStyle(document.documentElement)
+            .getPropertyValue('--agri-border').trim();
+        });
+        chart.update('none');
+      });
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCharts);
+  } else {
+    initializeCharts();
+  }
+})();
+</script>
+{% endblock %}

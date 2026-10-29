@@ -1,0 +1,141 @@
+{% load static i18n %}
+<aside class="admin-sidebar" id="adminSidebar">
+  <!-- Brand Header -->
+  <a href="{% url 'admin:index' %}" class="admin-brand">
+    <div class="admin-brand-icon">
+      <i class="fa-solid fa-seedling"></i>
+    </div>
+    <div>
+      <div class="admin-brand-title">SMART <span>AGRIASSIST</span></div>
+      <div class="admin-brand-subtitle">Farm Administration</div>
+    </div>
+  </a>
+
+  <!-- Navigation items -->
+  <div class="py-2">
+    <!-- Administration -->
+    <div class="admin-nav-section">Administration</div>
+    <div class="admin-nav-item">
+      <a href="{% url 'admin:index' %}" class="admin-nav-link {% if request.path == '/admin/' %}active{% endif %}">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Admin Dashboard</span>
+      </a>
+    </div>
+    {% if perms.auth.view_user or user.is_superuser %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin:auth_user_changelist' %}"
+        class="admin-nav-link {% if '/auth/user/' in request.path or '/admin/users/' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-users-gear"></i>
+        <span>User Management</span>
+      </a>
+    </div>
+    {% endif %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin_notifications' %}"
+        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_notifications' %}active{% endif %}">
+        <i class="fa-regular fa-bell"></i>
+        <span>Notification Center</span>
+        <span class="admin-nav-badge admin-notification-count" data-admin-notification-count hidden>0</span>
+      </a>
+    </div>
+    <!-- Farm Management -->
+    <div class="admin-nav-section">Farm Management</div>
+    {% if perms.crops.view_crop or user.is_superuser %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin:crops_crop_changelist' %}"
+        class="admin-nav-link {% if '/crops/crop/' in request.path and '/crops/cropgrowthstage/' not in request.path %}active{% endif %}">
+        <i class="fa-solid fa-wheat-awn"></i>
+        <span>Crops</span>
+        {% if total_crops %}
+        <span class="admin-nav-badge">{{ total_crops }}</span>
+        {% endif %}
+      </a>
+    </div>
+    {% endif %}
+    {% if perms.crops.view_cropgrowthstage or user.is_superuser %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin:crops_cropgrowthstage_changelist' %}"
+        class="admin-nav-link {% if '/crops/cropgrowthstage/' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-timeline"></i>
+        <span>Crop Growth Tracking</span>
+      </a>
+    </div>
+    {% endif %}
+    {% if perms.catalog.view_cropcatalog or user.is_superuser %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin:catalog_cropcatalog_changelist' %}"
+        class="admin-nav-link {% if '/catalog/cropcatalog/' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-book-bookmark"></i>
+        <span>Crop Catalog</span>
+      </a>
+    </div>
+    {% endif %}
+    {% if perms.crops.view_scheduledreminder or user.is_superuser %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin:crops_scheduledreminder_changelist' %}"
+        class="admin-nav-link {% if '/crops/scheduledreminder/' in request.path %}active{% endif %}">
+        <i class="fa-regular fa-clock"></i>
+        <span>Scheduled Reminders</span>
+        {% if pending_reminders %}
+        <span class="admin-nav-badge">{{ pending_reminders }}</span>
+        {% endif %}
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- AI Assistant -->
+    <div class="admin-nav-section">AI Assistant</div>
+    <div class="admin-nav-item">
+      <a href="{% url 'admin_ai_assistant' %}"
+        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_ai_assistant' or '/info/userpreference/' in request.path or '/core/conversation/' in request.path or '/core/cropdiagnosis/' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-robot"></i>
+        <span>AI Assistant Configuration</span>
+      </a>
+    </div>
+
+    <!-- Weather & Alerts -->
+    <div class="admin-nav-section">Weather &amp; Alerts</div>
+    {% if perms.info.view_weatheralert or perms.info.view_weatherrecord or user.is_superuser %}
+    <div class="admin-nav-item">
+      <a href="{% url 'admin_weather' %}"
+        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_weather' or '/info/weatheralert/' in request.path or '/info/weatherrecord/' in request.path %}active{% endif %}">
+        <i class="fa-solid fa-cloud-bolt"></i>
+        <span>Weather &amp; Alerts</span>
+        {% if active_weather_count %}
+        <span class="admin-nav-badge" style="background: rgba(239,68,68,0.25); color: #fca5a5;">{{ active_weather_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- System Settings -->
+    <div class="admin-nav-section">System Settings</div>
+    <div class="admin-nav-item">
+      <a href="{% url 'admin_settings' %}"
+        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_settings' %}active{% endif %}">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Settings</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer Admin Profile & Logout -->
+  <div class="admin-sidebar-footer">
+    <div class="admin-user-pill">
+      <div class="admin-user-avatar">
+        {{ user.username|first|upper }}
+      </div>
+      <div class="admin-user-info">
+        <div class="admin-user-name">{{ user.first_name|default:user.username }}</div>
+        <div class="admin-user-role">Administrator</div>
+      </div>
+      <form method="post" action="{% url 'admin:logout' %}" style="display: inline; margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-link text-muted p-1" title="Sign out"
+          style="border: none; background: transparent; cursor: pointer;">
+          <i class="fa-solid fa-arrow-right-from-bracket" style="font-size: 1rem;"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</aside>

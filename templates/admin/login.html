@@ -1,0 +1,152 @@
+{% load i18n static %}
+{% get_media_prefix as MEDIA_PREFIX %}
+<!doctype html>
+<html lang="en" data-theme-authenticated="false">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Admin Sign In — SMART AGRIASSIST</title>
+  <script src="{% static 'js/app-theme.js' %}"></script>
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link href="{% static 'css/tabler.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/app-theme.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/admin-theme.css' %}" rel="stylesheet" />
+</head>
+
+<body class="antialiased auth-login-body">
+  <main class="auth-login-page">
+
+    <!-- Left Brand Story Panel (Desktop) -->
+    <section class="auth-story-panel"
+      style="--login-field-image: url('{{ MEDIA_PREFIX }}chat_images/Ripening-heads-rice-Oryza-sativa.webp');"
+      aria-labelledby="welcomeHeading">
+      <a href="{% url 'admin:index' %}" class="auth-story-brand" aria-label="Smart AgriAssist admin home">
+        <span class="auth-story-mark"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span>
+        <span>
+          <span class="auth-story-wordmark">SMART <strong>AGRIASSIST</strong></span>
+          <span class="auth-story-tagline">Farm Administration</span>
+        </span>
+      </a>
+
+      <div class="auth-story-content">
+        <p class="auth-story-eyebrow">Grow with confidence</p>
+        <h1 id="welcomeHeading">Welcome to<br>Smart AgriAssist</h1>
+        <p class="auth-story-description">Grow smarter. Manage your farm with confidence.</p>
+
+        <ul class="auth-feature-list">
+          <li>
+            <span class="auth-feature-icon"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span>
+            <span><strong>Farm Insights</strong><small>Make informed decisions with timely farm data.</small></span>
+          </li>
+          <li>
+            <span class="auth-feature-icon"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i></span>
+            <span><strong>Crop Management</strong><small>Keep crop care and field activities organized.</small></span>
+          </li>
+          <li>
+            <span class="auth-feature-icon"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span>
+            <span><strong>Track Your Progress</strong><small>Follow growth and see how your farm
+                develops.</small></span>
+          </li>
+        </ul>
+      </div>
+
+      <p class="auth-story-footer">SMART AGRIASSIST &bull; FARM ADMINISTRATION PORTAL</p>
+    </section>
+
+    <!-- Right Admin Authentication Form Panel -->
+    <section class="auth-form-panel" aria-label="Admin Sign in">
+      <div class="auth-form-card">
+        <div class="auth-form-brand" aria-hidden="true">
+          <span class="auth-form-mark" style="background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);">
+            <i class="fa-solid fa-shield-halved"></i>
+          </span>
+        </div>
+
+        <h2>Sign in to your admin account</h2>
+        <p class="auth-form-intro">Welcome back! Enter your administrator credentials below.</p>
+
+        <!-- Form Error Alerts -->
+        {% if form.errors and not form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="fa-solid fa-triangle-exclamation alert-icon" aria-hidden="true"></i>
+          <div>
+            <h3 class="alert-heading">Sign in failed</h3>
+            <div class="alert-description">Please enter a correct username and password. Note that both fields may be
+              case-sensitive.</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+        {% for error in form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="fa-solid fa-triangle-exclamation alert-icon" aria-hidden="true"></i>
+          <div>
+            <h3 class="alert-heading">Authentication error</h3>
+            <div class="alert-description">{{ error }}</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if user.is_authenticated and not user.is_staff %}
+        <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2" role="alert"
+          style="font-size: 13px;">
+          <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+          <div>You are logged in as <strong>{{ user.username }}</strong>, but your account does not have staff or
+            administrator privileges.</div>
+        </div>
+        {% endif %}
+
+        <form action="{{ app_path }}" method="post" id="login-form" class="auth-login-form">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next|default:'/admin/' }}">
+
+          <div class="mb-3">
+            <label class="form-label" for="id_username">Admin Username</label>
+            <div class="input-group auth-input-group">
+              <span class="input-group-text" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+              <input id="id_username" type="text" class="form-control" name="username" autocomplete="username"
+                placeholder="Enter admin username" required autofocus>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0" for="id_password">Password</label>
+              {% url 'admin_password_reset' as password_reset_url %}
+              {% if password_reset_url %}
+              <a href="{{ password_reset_url }}" class="auth-forgot-link">Forgot password?</a>
+              {% endif %}
+            </div>
+            <div class="input-group auth-input-group">
+              <span class="input-group-text" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
+              <input id="id_password" type="password" class="form-control" name="password"
+                autocomplete="current-password" placeholder="Enter password" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success auth-submit-button w-100">
+            <i class="fa-solid fa-arrow-right-to-bracket me-2" aria-hidden="true"></i> Sign In to Admin Panel
+          </button>
+        </form>
+
+        <p class="auth-create-account text-center mt-4">
+          Looking for the regular farmer portal?
+          <a href="{% url 'login' %}">Farm User Login &rarr;</a>
+        </p>
+      </div>
+
+      <p class="auth-form-footer">A smarter way to care for your farm &bull; Admin Portal</p>
+    </section>
+  </main>
+
+  <script src="{% static 'js/tabler.js' %}" defer></script>
+</body>
+
+</html>

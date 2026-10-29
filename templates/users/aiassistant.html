@@ -92,8 +92,8 @@
         <div class="chat-header">
           <div class="chat-title">
             <div class="d-flex align-items-center gap-2">
-              <span class="stat-card-icon stat-card-icon-assistant p-2">
-                <i class="fa-solid fa-robot fa-lg"></i>
+              <span class="dh-brand-mark chat-assistant-mark" aria-hidden="true">
+                <i class="fa-solid fa-seedling"></i>
               </span>
               <div>
                 <h5 class="mb-0 fw-bold">SMART Agricultural Assistant</h5>
@@ -366,24 +366,75 @@
           return;
         }
         data.conversations.forEach(function(c) {
-          var item = document.createElement('a');
-          item.href = '#';
-          item.className = 'list-group-item list-group-item-action py-2 px-3 ' + (c.id === currentConversationId ? 'active' : '');
+          var item = document.createElement('div');
+          item.className = 'list-group-item py-2 px-3 d-flex align-items-center gap-2';
           var dt = new Date(c.started_at).toLocaleDateString([], { month: 'short', day: 'numeric' });
-          item.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-              <strong class="text-truncate">Chat #${c.id}</strong>
-              <span class="small text-muted">${dt}</span>
-            </div>
-            <div class="small text-muted">${c.message_count} messages</div>
-          `;
-          item.addEventListener('click', function(e) {
-            e.preventDefault();
+          var openButton = document.createElement('button');
+          openButton.type = 'button';
+          openButton.className = 'btn btn-link text-start text-decoration-none p-0 flex-grow-1 min-w-0';
+          openButton.setAttribute('aria-current', c.id === currentConversationId ? 'true' : 'false');
+          var details = document.createElement('span');
+          details.className = 'd-block text-truncate';
+          var heading = document.createElement('strong');
+          heading.className = 'd-block text-truncate';
+          heading.textContent = `Chat #${c.id}`;
+          var metadata = document.createElement('span');
+          metadata.className = 'd-flex justify-content-between gap-2 small text-muted';
+          var messageCount = document.createElement('span');
+          messageCount.textContent = `${c.message_count} messages`;
+          var date = document.createElement('span');
+          date.textContent = dt;
+          metadata.append(messageCount, date);
+          details.append(heading, metadata);
+          openButton.appendChild(details);
+          openButton.addEventListener('click', function() {
             switchConversation(c.id);
           });
+
+          var deleteButton = document.createElement('button');
+          deleteButton.type = 'button';
+          deleteButton.className = 'btn btn-ghost-danger btn-sm p-1';
+          deleteButton.title = `Delete Chat #${c.id}`;
+          deleteButton.setAttribute('aria-label', `Delete Chat #${c.id}`);
+          deleteButton.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+          deleteButton.addEventListener('click', function() {
+            deleteConversation(c.id);
+          });
+
+          item.append(openButton, deleteButton);
           conversationsList.appendChild(item);
         });
       });
+  }
+
+  function deleteConversation(convId) {
+    if (!confirm(`Delete Chat #${convId} and all of its messages? This cannot be undone.`)) return;
+
+    fetch(`/chat/conversations/${convId}/delete/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+    .then(function(response) {
+      return response.json().then(function(data) {
+        if (!response.ok || data.status !== 'success') {
+          throw new Error(data.error || 'The conversation could not be deleted.');
+        }
+        return data;
+      });
+    })
+    .then(function() {
+      if (currentConversationId === convId) {
+        currentConversationId = null;
+        messages.innerHTML = '';
+        addBubble('This conversation was deleted. Start a new chat or open another conversation.', 'assistant');
+      }
+      loadConversations();
+    })
+    .catch(function(error) {
+      window.alert(error.message);
+    });
   }
 
   function switchConversation(convId) {

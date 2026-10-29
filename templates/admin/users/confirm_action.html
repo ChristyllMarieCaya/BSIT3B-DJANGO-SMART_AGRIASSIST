@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'admin:index' %}">Admin</a>
+<span>&rsaquo;</span>
+<a href="{% url 'admin:auth_user_changelist' %}">User Management</a>
+<span>&rsaquo;</span>
+<span class="admin-topbar-crumb fw-semibold">{{ title }}</span>
+{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<section class="admin-confirm-card">
+  <div class="admin-page-eyebrow">Confirm account change</div>
+  <h1 class="admin-page-heading">{{ title }}</h1>
+  <p class="text-muted">This action affects {{ users|length }} selected account{{ users|length|pluralize }}.</p>
+  <ul class="admin-confirm-user-list">
+    {% for account in users %}
+    <li><strong>{{ account.username }}</strong>{% if account.email %}<span>{{ account.email }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="{% url 'admin:auth_user_changelist' %}" class="d-flex flex-wrap gap-2 mt-4">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{{ action_name }}">
+    <input type="hidden" name="confirm_action" value="1">
+    <input type="hidden" name="select_across" value="0">
+    <input type="hidden" name="index" value="0">
+    {% for account_id in selected_ids %}
+    <input type="hidden" name="_selected_action" value="{{ account_id }}">
+    {% endfor %}
+    <button class="btn btn-danger" type="submit">Confirm {{ title|lower }}</button>
+    <a class="btn btn-outline-secondary" href="{% url 'admin:auth_user_changelist' %}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

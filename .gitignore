@@ -38,5 +38,3 @@ Thumbs.db
 .env
 *.env
 !.env.example
-
-echo ".env.example" >> .gitignore

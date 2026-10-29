@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:'Smart AgriAssist Admin' }}{% endblock %}
+
+{% block branding %}
+<div class="d-flex align-items-center gap-2">
+  <span class="fs-4 fw-bold admin-heading">SMART <span style="color: var(--agri-accent);">AGRIASSIST</span></span>
+  <span class="badge bg-success-lt text-success ms-2">Admin</span>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme-authenticated="false" data-theme-preference="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -8,6 +8,7 @@
   <title>Create Account — SMART AGRIASSIST</title>
   <link rel="icon" href="./favicon-dev.ico" type="image/x-icon" />
   <link rel="shortcut icon" href="./favicon-dev.ico" type="image/x-icon" />
+  <script src="{% static 'js/app-theme.js' %}"></script>
   <link href="{% static 'css/tabler.css' %}" rel="stylesheet" />
   <link href="{% static 'css/app-theme.css' %}" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -16,7 +17,6 @@
   </style>
 </head>
 <body class="antialiased">
-  <script src="{% static 'js/tabler-theme.js' %}"></script>
   <div class="page page-center">
     <div class="container container-tight py-4">
 
@@ -125,8 +125,6 @@
 
     </div>
   </div>
-  {% include 'theme/settings.html' %}
-
   <script src="{% static 'js/tabler.js' %}" defer></script>
   <script>
     document.getElementById('togglePassword').addEventListener('click', function () {

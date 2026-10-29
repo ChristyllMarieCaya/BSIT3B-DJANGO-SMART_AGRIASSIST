@@ -8,7 +8,7 @@
       <div class="col">
         <div class="page-pretitle">System Preferences</div>
         <h2 class="page-title mb-1">Settings &amp; Personalization</h2>
-        <p class="text-muted mb-0">Configure your account, farm coordinates, AI Assistant preferences, weather alert thresholds, and automated reminder rules.</p>
+        <p class="text-muted mb-0">Configure your account, appearance theme, country, time zone, farm location, weather alerts, and automated crop care reminders.</p>
       </div>
       <div class="col-auto">
         <button type="submit" form="settingsForm" class="btn btn-success" id="topSaveBtn">
@@ -24,13 +24,54 @@
     {% csrf_token %}
 
     <div class="row g-4">
-      <!-- LEFT COLUMN: Account & Farm -->
+      <!-- LEFT COLUMN: Appearance, Account & Farm -->
       <div class="col-lg-6">
-        <!-- 1. Account Settings -->
+        <!-- 1. Appearance / Theme Selection -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-transparent border-0 pb-0">
             <h4 class="card-title fw-bold text-success">
-              <i class="fa-solid fa-user-gear me-2"></i> Account Settings
+              <i class="fa-solid fa-circle-half-stroke me-2"></i> Appearance &amp; Theme
+            </h4>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small mb-3">Choose how SMART AGRIASSIST looks for you. Changes apply immediately across all pages.</p>
+            <div class="row g-3">
+              <div class="col-4">
+                <label class="card card-sm p-3 text-center border h-100 theme-card cursor-pointer {% if pref.theme == 'light' %}border-success bg-success-lt{% endif %}" for="themeLight" style="cursor: pointer;">
+                  <input type="radio" name="theme" id="themeLight" value="light" class="d-none theme-radio" {% if pref.theme == 'light' %}checked{% endif %}>
+                  <i class="fa-solid fa-sun fa-2x text-warning mb-2"></i>
+                  <strong class="d-block small">Light Mode</strong>
+                  <span class="text-muted small" style="font-size: 0.7rem;">Crisp &amp; clean</span>
+                </label>
+              </div>
+              <div class="col-4">
+                <label class="card card-sm p-3 text-center border h-100 theme-card cursor-pointer {% if pref.theme == 'dark' %}border-success bg-success-lt{% endif %}" for="themeDark" style="cursor: pointer;">
+                  <input type="radio" name="theme" id="themeDark" value="dark" class="d-none theme-radio" {% if pref.theme == 'dark' %}checked{% endif %}>
+                  <i class="fa-solid fa-moon fa-2x text-info mb-2"></i>
+                  <strong class="d-block small">Dark Mode</strong>
+                  <span class="text-muted small" style="font-size: 0.7rem;">Reduced glare</span>
+                </label>
+              </div>
+              <div class="col-4">
+                <label class="card card-sm p-3 text-center border h-100 theme-card cursor-pointer {% if pref.theme == 'system' %}border-success bg-success-lt{% endif %}" for="themeSystem" style="cursor: pointer;">
+                  <input type="radio" name="theme" id="themeSystem" value="system" class="d-none theme-radio" {% if pref.theme == 'system' %}checked{% endif %}>
+                  <i class="fa-solid fa-desktop fa-2x text-primary mb-2"></i>
+                  <strong class="d-block small">System Default</strong>
+                  <span class="text-muted small" style="font-size: 0.7rem;">Matches OS</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-hint mt-2">
+              <i class="fa-solid fa-info-circle me-1"></i> When <strong>System default</strong> is selected, the application theme updates automatically if you toggle light/dark mode in Windows, macOS, Android, or iOS.
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Account & Region / Time Zone Settings -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-transparent border-0 pb-0">
+            <h4 class="card-title fw-bold text-success">
+              <i class="fa-solid fa-user-gear me-2"></i> Account &amp; Regional Preferences
             </h4>
           </div>
           <div class="card-body">
@@ -52,22 +93,57 @@
                 <label class="form-label">Username</label>
                 <input type="text" class="form-control bg-light" value="{{ user.username }}" disabled>
               </div>
+
+              <!-- Country / Region Selector -->
+              <div class="col-md-6">
+                <label class="form-label">Country / Region</label>
+                <select name="country" id="countrySelect" class="form-select">
+                  {% for c_code, c_name in countries %}
+                  <option value="{{ c_name }}" {% if pref.country == c_name %}selected{% endif %}>{{ c_name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-hint">Used for available official regional alerts (PAGASA for the Philippines). Saves automatically.</div>
+              </div>
+
+              <!-- Preferred Language -->
               <div class="col-md-6">
                 <label class="form-label">Preferred Language</label>
-                <select name="preferred_language" class="form-select">
-                  <option value="en" {% if pref.preferred_language == 'en' %}selected{% endif %}>English</option>
-                  <option value="fil" {% if pref.preferred_language == 'fil' %}selected{% endif %}>Filipino (Tagalog)</option>
-                  <option value="ceb" {% if pref.preferred_language == 'ceb' %}selected{% endif %}>Cebuano / Bisaya</option>
-                  <option value="ilo" {% if pref.preferred_language == 'ilo' %}selected{% endif %}>Ilokano</option>
+                <select name="preferred_language" id="languageSelect" class="form-select">
+                  {% for language_code, language_name in preferred_languages %}
+                  <option value="{{ language_code }}" {% if pref.preferred_language == language_code %}selected{% endif %}>{{ language_name }}</option>
+                  {% endfor %}
                 </select>
+                <div class="form-hint">Used for AI assistant responses and generated advice. Saves automatically.</div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Time Zone</label>
-                <select name="timezone" class="form-select">
-                  <option value="Asia/Manila" {% if pref.timezone == 'Asia/Manila' %}selected{% endif %}>Asia/Manila (GMT+8)</option>
-                  <option value="UTC" {% if pref.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+              <div class="col-12">
+                <div id="regionalPreferenceStatus" class="form-hint" role="status" aria-live="polite"></div>
+              </div>
+
+              <!-- Searchable Time Zone Selector -->
+              <div class="col-12 border-top pt-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="form-label fw-bold mb-0">Preferred Display Time Zone (IANA Standard)</label>
+                  <span class="badge bg-secondary-lt text-secondary small">Auto Daylight Saving (DST)</span>
+                </div>
+                <div class="mb-2">
+                  <input type="text" id="timezoneSearch" class="form-control form-control-sm" placeholder="🔍 Search IANA time zones (e.g. Manila, Tokyo, London, New York, Sydney)...">
+                </div>
+                <select name="timezone" id="timezoneSelect" class="form-select" size="5">
+                  {% for tz_id, tz_label in timezones %}
+                  <option value="{{ tz_id }}" {% if pref.timezone == tz_id %}selected{% endif %}>{{ tz_label }}</option>
+                  {% endfor %}
                 </select>
+
+                <!-- Live Clock Display for Selected Time Zone -->
+                <div class="p-2 mt-2 rounded bg-light border d-flex align-items-center gap-2">
+                  <i class="fa-regular fa-clock text-success fa-lg"></i>
+                  <div class="small">
+                    <span class="text-muted">Current Date &amp; Time in selected zone:</span>
+                    <strong class="d-block text-success" id="currentTimeDisplay">{{ current_time_str }}</strong>
+                  </div>
+                </div>
               </div>
+
               <div class="col-md-6">
                 <label class="form-label">Measurement Units</label>
                 <select name="measurement_units" class="form-select">
@@ -99,11 +175,11 @@
           </div>
         </div>
 
-        <!-- 2. Farm Settings & Location Coordinates -->
+        <!-- 3. Farm Settings, Geolocation & Local Farm Timezone -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-transparent border-0 pb-0">
             <h4 class="card-title fw-bold text-success">
-              <i class="fa-solid fa-map-location-dot me-2"></i> Farm Settings &amp; Geolocation
+              <i class="fa-solid fa-map-location-dot me-2"></i> Farm Location &amp; Geolocation
             </h4>
           </div>
           <div class="card-body">
@@ -113,7 +189,7 @@
                 <input type="text" name="farm_name" class="form-control" value="{{ pref.farm_name }}" placeholder="e.g. Green Valley Agricultural Farm">
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label">Farm Location (Municipality/Province)</label>
+                <label class="form-label">Farm Location (City / Municipality / Province)</label>
                 <input type="text" name="farm_location" id="farmLocationInput" class="form-control" value="{{ pref.farm_location }}" placeholder="e.g. Cauayan, Isabela">
               </div>
               <div class="col-md-6">
@@ -124,11 +200,23 @@
                 <label class="form-label">Longitude Coordinate</label>
                 <input type="number" step="0.000001" name="longitude" id="farmLonInput" class="form-control" value="{{ pref.longitude|default:'' }}" placeholder="e.g. 121.7743">
               </div>
+
+              <!-- Farm local time zone (kept separate from user's preferred time zone) -->
+              <div class="col-12">
+                <label class="form-label">Farm Local Time Zone (for Agro-Meteorological &amp; Sun calculations)</label>
+                <select name="farm_timezone" id="farmTimezoneSelect" class="form-select">
+                  {% for tz_id, tz_label in timezones %}
+                  <option value="{{ tz_id }}" {% if pref.farm_timezone == tz_id %}selected{% endif %}>{{ tz_label }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-hint">Kept separate from your personal display time zone to ensure weather observations match the field's local solar time.</div>
+              </div>
+
               <div class="col-12">
                 <button type="button" class="btn btn-outline-success btn-sm" id="btnGpsLocation">
                   <i class="fa-solid fa-crosshairs me-1"></i> Detect Current GPS Coordinates (Browser Geolocation)
                 </button>
-                <div class="form-hint" id="gpsStatus">Coordinates enable pinpoint agro-meteorological forecasting for your specific field.</div>
+                <div class="form-hint" id="gpsStatus">Coordinates enable pinpoint Open-Meteo forecasting and automatic risk detection for your specific field.</div>
               </div>
               <div class="col-12 border-top pt-2">
                 <div class="d-flex justify-content-between align-items-center">
@@ -136,49 +224,6 @@
                   <a href="{% url 'crops:crop_tracker' %}" class="btn btn-sm btn-outline-secondary">
                     <i class="fa-solid fa-wheat-awn me-1"></i> Open Crop Tracker
                   </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. AI Assistant Settings -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-transparent border-0 pb-0">
-            <h4 class="card-title fw-bold text-success">
-              <i class="fa-solid fa-robot me-2"></i> AI Assistant Personalization
-            </h4>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Response Language</label>
-                <select name="ai_response_language" class="form-select">
-                  <option value="en" {% if pref.ai_response_language == 'en' %}selected{% endif %}>English</option>
-                  <option value="fil" {% if pref.ai_response_language == 'fil' %}selected{% endif %}>Filipino (Tagalog/Taglish)</option>
-                  <option value="ceb" {% if pref.ai_response_language == 'ceb' %}selected{% endif %}>Cebuano / Bisaya</option>
-                  <option value="ilo" {% if pref.ai_response_language == 'ilo' %}selected{% endif %}>Ilokano</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Response Detail Level</label>
-                <select name="ai_response_detail" class="form-select">
-                  <option value="concise" {% if pref.ai_response_detail == 'concise' %}selected{% endif %}>Concise (Quick bullet points)</option>
-                  <option value="balanced" {% if pref.ai_response_detail == 'balanced' %}selected{% endif %}>Balanced (Practical &amp; Actionable)</option>
-                  <option value="detailed" {% if pref.ai_response_detail == 'detailed' %}selected{% endif %}>Detailed (In-depth Agronomy)</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <div class="form-check form-switch">
-                  <input type="checkbox" name="enable_conversation_history" class="form-check-input" id="enableHistory" {% if pref.enable_conversation_history %}checked{% endif %}>
-                  <label class="form-check-label" for="enableHistory">Enable Multi-Turn Conversation History</label>
-                </div>
-                <div class="form-hint">Allows the assistant to recall previous questions and diagnose follow-up symptoms in the same chat.</div>
-              </div>
-              <div class="col-12 border-top pt-2">
-                <div class="d-flex justify-content-between align-items-center small text-muted">
-                  <span>AI Service Status:</span>
-                  <span class="badge bg-success-lt text-success"><i class="fa-solid fa-circle-check me-1"></i> Google Gemini Connected</span>
                 </div>
               </div>
             </div>
@@ -202,7 +247,7 @@
                   <input type="checkbox" name="weather_monitoring_enabled" class="form-check-input" id="weatherMonSwitch" {% if pref.weather_monitoring_enabled %}checked{% endif %}>
                   <label class="form-check-label fw-bold" for="weatherMonSwitch">Automatic Background Weather Monitoring</label>
                 </div>
-                <div class="form-hint">Continuously inspects farm location forecast for heavy rain, storms, and extreme temperatures.</div>
+                <div class="form-hint">Continuously retrieves Open-Meteo forecasts and checks official PAGASA bulletins using background scheduling.</div>
               </div>
               <div class="col-12">
                 <div class="form-check form-switch">
@@ -273,7 +318,7 @@
           </div>
         </div>
 
-        <!-- 5. Notification Delivery Channels Status -->
+        <!-- 5. Notification Delivery Channels -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-transparent border-0 pb-0">
             <h4 class="card-title fw-bold text-success">
@@ -312,16 +357,6 @@
                 </div>
                 <div class="form-check form-switch mb-0">
                   <input type="checkbox" name="channel_email" class="form-check-input" {% if pref.channel_email %}checked{% endif %}>
-                </div>
-              </div>
-
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
-                <div>
-                  <div class="fw-semibold small"><i class="fa-solid fa-comment-sms me-1 text-secondary"></i> SMS Alerts (Optional Integration)</div>
-                  <div class="text-muted" style="font-size: 0.75rem;">Status: Optional SMS gateway integration ready.</div>
-                </div>
-                <div class="form-check form-switch mb-0">
-                  <input type="checkbox" name="channel_sms" class="form-check-input" {% if pref.channel_sms %}checked{% endif %}>
                 </div>
               </div>
             </div>
@@ -403,8 +438,122 @@ document.addEventListener('DOMContentLoaded', function() {
   const locInput = document.getElementById('farmLocationInput');
   const browserBtn = document.getElementById('btnRequestBrowserPerm');
   const browserCheck = document.getElementById('channelBrowserCheck');
+  const tzSearch = document.getElementById('timezoneSearch');
+  const tzSelect = document.getElementById('timezoneSelect');
+  const clockDisplay = document.getElementById('currentTimeDisplay');
+  const countrySelect = document.getElementById('countrySelect');
+  const languageSelect = document.getElementById('languageSelect');
+  const regionalStatus = document.getElementById('regionalPreferenceStatus');
 
-  // GPS Geolocation
+  // --- 1. Immediate Theme Switching ---
+  const themeRadios = document.querySelectorAll('.theme-radio');
+  const themeCards = document.querySelectorAll('.theme-card');
+
+  themeRadios.forEach(radio => {
+    radio.addEventListener('change', function() {
+      const selected = this.value;
+      if (window.applySmartTheme) {
+        window.applySmartTheme(selected, false);
+      }
+      themeCards.forEach(card => card.classList.remove('border-success', 'bg-success-lt'));
+      const activeCard = document.querySelector(`label[for="${this.id}"]`);
+      if (activeCard) {
+        activeCard.classList.add('border-success', 'bg-success-lt');
+      }
+    });
+  });
+
+  // Save country and language independently so changing them never submits unrelated settings.
+  let regionalSaveInProgress = false;
+  let regionalSavePending = false;
+  function saveRegionalPreferences() {
+    regionalSavePending = true;
+    if (regionalSaveInProgress) return;
+    regionalSaveInProgress = true;
+
+    function sendRegionalPreferences() {
+      regionalSavePending = false;
+      regionalStatus.textContent = 'Saving country and language preferences...';
+      const data = new FormData();
+      data.append('action', 'regional_preferences');
+      data.append('country', countrySelect.value);
+      data.append('preferred_language', languageSelect.value);
+
+      fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: data
+      })
+      .then(response => response.json().then(payload => {
+        if (!response.ok || payload.status !== 'ok') {
+          throw new Error(payload.message || 'The server could not save these preferences.');
+        }
+        regionalStatus.textContent = payload.message;
+        regionalStatus.setAttribute('role', 'status');
+      }))
+      .catch(error => {
+        regionalStatus.textContent = `Unable to save country and language preferences: ${error.message}`;
+        regionalStatus.setAttribute('role', 'alert');
+      })
+      .finally(() => {
+        if (regionalSavePending) {
+          sendRegionalPreferences();
+        } else {
+          regionalSaveInProgress = false;
+        }
+      });
+    }
+
+    sendRegionalPreferences();
+  }
+
+  [countrySelect, languageSelect].forEach(select => {
+    if (select) select.addEventListener('change', saveRegionalPreferences);
+  });
+
+  // --- 2. Searchable Timezones ---
+  if (tzSearch && tzSelect) {
+    const allOptions = Array.from(tzSelect.options);
+    tzSearch.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      tzSelect.innerHTML = '';
+      allOptions.forEach(opt => {
+        if (!query || opt.text.toLowerCase().includes(query) || opt.value.toLowerCase().includes(query)) {
+          tzSelect.appendChild(opt);
+        }
+      });
+    });
+
+    // Update live clock on timezone change
+    function updateLiveClock() {
+      const selectedTz = tzSelect.value;
+      if (!selectedTz) return;
+      try {
+        const now = new Date();
+        const options = {
+          timeZone: selectedTz,
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short'
+        };
+        clockDisplay.textContent = new Intl.DateTimeFormat('en-US', options).format(now);
+      } catch (err) {
+        clockDisplay.textContent = `${selectedTz} — ` + new Date().toLocaleTimeString();
+      }
+    }
+
+    tzSelect.addEventListener('change', updateLiveClock);
+    setInterval(updateLiveClock, 1000);
+  }
+
+  // --- 3. GPS Geolocation ---
   if (gpsBtn) {
     gpsBtn.addEventListener('click', function() {
       if (!navigator.geolocation) {
@@ -426,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Browser Notification Permission
+  // --- 4. Browser Notification Permission ---
   if (browserBtn) {
     browserBtn.addEventListener('click', function() {
       if (!("Notification" in window)) {
@@ -449,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Form Submit via AJAX
+  // --- 5. Form Submit via AJAX ---
   form.addEventListener('submit', function(e) {
     e.preventDefault();
     const btn = document.getElementById('bottomSaveBtn');
@@ -467,17 +616,35 @@ document.addEventListener('DOMContentLoaded', function() {
       },
       body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('The server could not save your settings.');
+      }
+      return res.json();
+    })
     .then(data => {
+      if (data.status !== 'ok') {
+        throw new Error(data.message || 'The server could not save your settings.');
+      }
+      if (window.applySmartTheme) {
+        window.applySmartTheme(data.theme, true);
+      }
       alertBox.className = 'alert alert-success alert-dismissible fade show';
       alertBox.innerHTML = `
         <i class="fa-solid fa-circle-check me-2"></i> ${data.message || 'Preferences saved successfully!'}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       `;
       alertBox.classList.remove('d-none');
+      if (data.current_time_str) {
+        clockDisplay.textContent = data.current_time_str;
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     })
     .catch(err => {
+      const savedTheme = document.documentElement.dataset.themePreference;
+      if (window.applySmartTheme && savedTheme) {
+        window.applySmartTheme(savedTheme, false);
+      }
       alertBox.className = 'alert alert-danger alert-dismissible fade show';
       alertBox.innerHTML = `<i class="fa-solid fa-circle-exclamation me-2"></i> Error saving settings: ${err.message}`;
       alertBox.classList.remove('d-none');

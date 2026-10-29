@@ -1,78 +1,118 @@
 {% extends "theme/base.html" %}
-{% block title %}Weather — SMART AGRIASSIST{% endblock %}
+{% block title %}Weather &amp; Alerts — SMART AGRIASSIST{% endblock %}
 {% block content %}
 <div class="container-xl">
   <!-- Page header -->
-  <div class="page-header d-print-none" aria-label="Page header">
+  <div class="page-header d-print-none mb-3" aria-label="Page header">
     <div class="row align-items-center">
       <div class="col">
-        <div class="page-pretitle">Weather</div>
-        <h2 class="page-title mb-1">Farm Weather</h2>
-        <p class="text-muted mb-0">Live conditions and forecast for your farm location.</p>
+        <div class="page-pretitle">Agro-Meteorology</div>
+        <h2 class="page-title mb-1">Farm Weather &amp; Severe Advisories</h2>
+        <p class="text-muted mb-0">Real-time Open-Meteo observations, multi-day forecast, official PAGASA bulletins, and automatic agricultural risk alerts.</p>
       </div>
-      <div class="col-auto">
-        {% if weather_configured %}
-        <button type="button" class="btn btn-success" id="weatherRefresh" title="Refresh weather">
-          <i class="fa-solid fa-arrows-rotate me-1"></i>Refresh
+      <div class="col-auto d-flex gap-2 align-items-center">
+        <button type="button" class="btn btn-outline-success" id="weatherRefresh" title="Refresh weather data">
+          <i class="fa-solid fa-arrows-rotate me-1" id="weatherRefreshIcon"></i> Refresh Now
         </button>
-        {% else %}
-        <span class="badge bg-warning-lt text-warning">
-          <i class="fa-solid fa-triangle-exclamation me-1"></i>Not configured
-        </span>
-        {% endif %}
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#changeLocationModal">
+          <i class="fa-solid fa-location-dot me-1"></i> Change Location
+        </button>
       </div>
     </div>
   </div>
 
-  {% if not weather_configured %}
-  <div class="alert alert-warning" role="alert">
-    <i class="fa-solid fa-triangle-exclamation alert-icon" aria-hidden="true"></i>
-    <div>
-      <h4 class="alert-heading">Weather provider not configured</h4>
-      <div class="alert-description">
-        Live weather data requires an OpenWeatherMap API key. Set the
-        <code>OPENWEATHER_API_KEY</code> environment variable on the server and
-        configure your farm location in Settings.
+  <!-- Active Weather Alerts Banner (Official Warnings & Forecast Alerts) -->
+  {% if active_alerts %}
+  <div class="mb-4">
+    {% for alert in active_alerts %}
+    <div class="weather-advisory weather-advisory--{% if alert.severity == 'critical' or alert.severity == 'warning' %}danger{% elif alert.severity == 'watch' %}warning{% else %}info{% endif %} d-flex align-items-start gap-3 shadow-sm mb-3" role="alert">
+      <div class="weather-advisory__icon fs-2 flex-shrink-0">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+          <div class="d-flex align-items-center gap-2">
+            {% if alert.is_official or "PAGASA" in alert.source %}
+            <span class="badge bg-danger text-white"><i class="fa-solid fa-shield-halved me-1"></i> Official PAGASA Warning</span>
+            {% else %}
+            <span class="badge weather-advisory__forecast"><i class="fa-solid fa-chart-line me-1"></i> Forecast Alert</span>
+            {% endif %}
+            <h4 class="alert-heading mb-0 fw-bold">{{ alert.title }}</h4>
+          </div>
+          <span class="badge bg-secondary-lt text-secondary">{{ alert.get_severity_display }}</span>
+        </div>
+        <p class="mb-2">{{ alert.agricultural_impact }}</p>
+        <div class="small">
+        <strong>Precautionary Actions for Field Crops:</strong>
+        <div class="mt-1" style="white-space: pre-line;">{{ alert.precautionary_actions }}</div>
+        </div>
+        <div class="text-muted small mt-2" style="font-size: 0.75rem;">
+          Source: <strong>{{ alert.source }}</strong> &bull; Detected: {{ alert.created_at|date:"M j, Y H:i" }}
+        </div>
       </div>
     </div>
+    {% endfor %}
   </div>
   {% endif %}
 
-  {% if not weather.location %}
-  <div class="alert alert-info" role="alert">
-    <i class="fa-solid fa-info-circle alert-icon" aria-hidden="true"></i>
-    <div>
-      <h4 class="alert-heading">No farm location set</h4>
-      <div class="alert-description">
-        Go to <a href="{% url 'settings' %}" class="text-agri fw-bold">Settings</a> to configure your farm
-        location. Weather data will load automatically once a location is saved.
+  <!-- Location not configured banner with inline configuration -->
+  {% if not weather.location or not weather.available %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4 text-center">
+      <div class="mb-3">
+        <span class="stat-card-icon stat-card-icon-weather mx-auto" style="width: 60px; height: 60px; font-size: 1.75rem;">
+          <i class="fa-solid fa-cloud-sun text-warning"></i>
+        </span>
       </div>
+      <h3 class="fw-bold mb-2">{% if not weather.location %}No Farm Location Configured{% else %}Weather Data Notice{% endif %}</h3>
+      <p class="text-muted mx-auto mb-3" style="max-width: 500px;">
+        {{ weather.error|default:'Set your farm municipality, city, or province to automatically receive live Open-Meteo forecasts and severe weather warnings.' }}
+      </p>
+
+      <form method="post" action="{% url 'weather_api' %}" id="inlineLocationForm" class="mx-auto" style="max-width: 440px;">
+        {% csrf_token %}
+        <div class="input-group">
+          <span class="input-group-text theme-surface"><i class="fa-solid fa-location-dot text-success"></i></span>
+          <input type="text" name="location" id="inlineLocationInput" class="form-control" placeholder="e.g. Cauayan, Isabela or Muñoz, Nueva Ecija" value="{{ pref.farm_location }}" required>
+          <button type="submit" class="btn btn-success" id="btnSaveInlineLocation">
+            Save &amp; Fetch Weather
+          </button>
+        </div>
+        <div class="form-hint mt-2 text-start">
+          <i class="fa-solid fa-check text-success me-1"></i> Integrated with <strong>Open-Meteo</strong> &amp; <strong>PAGASA</strong> advisories. No external API key required.
+        </div>
+      </form>
     </div>
   </div>
   {% endif %}
 
   {% if weather.available and weather.current %}
   <div class="row g-4 mb-4">
-    <!-- Current conditions -->
+    <!-- Current conditions card -->
     <div class="col-lg-4">
-      <div class="card h-100 weather-card">
-        <div class="card-header border-0 bg-transparent">
+      <div class="card h-100 weather-card border-0 shadow-sm">
+        <div class="card-header border-0 bg-transparent pb-0">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <span class="card-title">Current Conditions</span>
-              <div class="weather-meta"><span id="weatherLocation">{{ weather.location }}</span> &bull; Updated <span id="weatherUpdated">just now</span></div>
+              <span class="card-title fw-bold">Live Conditions</span>
+              <div class="weather-meta">
+                <span id="weatherLocation">{{ weather.location }}</span> &bull;
+                <span id="weatherUpdated">{{ pref.weather_last_updated|date:"M j, H:i"|default:"Just now" }}</span>
+              </div>
             </div>
             <div class="text-end">
-              <i class="fa-solid fa-{{ weather.current.icon | default:'cloud' }}" id="weatherIcon" style="font-size: 3.5rem; color: #f59e0b;"></i>
+              <i class="fa-solid fa-{{ weather.current.icon|default:'cloud' }} weather-icon weather-icon--large" id="weatherIcon"></i>
             </div>
           </div>
         </div>
         <div class="card-body pt-0">
           <div class="weather-header mb-3">
             <div>
-              <div class="weather-temp"><span id="weatherTemperature">{{ weather.current.temperature }}</span><span id="weatherTempUnit">{{ weather.current.temp_unit }}</span></div>
-              <div class="weather-condition" id="weatherCondition">{{ weather.current.condition }}</div>
-              <div class="weather-meta" id="weatherDescription">{{ weather.current.description }}</div>
+              <div class="weather-temp">
+                <span id="weatherTemperature">{{ weather.current.temperature }}</span><span id="weatherTempUnit">{{ weather.current.temp_unit }}</span>
+              </div>
+              <div class="weather-condition fw-bold" id="weatherCondition">{{ weather.current.condition }}</div>
+              <div class="weather-meta text-muted" id="weatherDescription">{{ weather.current.description }}</div>
             </div>
           </div>
 
@@ -83,43 +123,46 @@
             </div>
             <div class="weather-detail-item">
               <span class="weather-detail-value" id="weatherWind">{{ weather.current.wind_speed }} {{ weather.current.wind_unit }}</span>
-              <span class="weather-detail-label">Wind</span>
+              <span class="weather-detail-label">Wind Speed</span>
             </div>
-            {% if weather.current.rain_1h %}
-            <div class="weather-detail-item" id="weatherRainItem">
-              <span class="weather-detail-value" id="weatherRain">{{ weather.current.rain_1h }} mm/h</span>
-              <span class="weather-detail-label">Rain (1h)</span>
+            <div class="weather-detail-item">
+              <span class="weather-detail-value" id="weatherRain">{{ weather.current.rain_1h|default:0.0 }} {{ weather.current.precip_unit|default:"mm" }}/h</span>
+              <span class="weather-detail-label">Precipitation</span>
             </div>
-            {% endif %}
           </div>
 
-          <div class="mt-3">
-            <p class="text-muted small mb-0">
-              <i class="fa-solid fa-thermometer-half me-1"></i>
-              Feels like {{ weather.current.feels_like }}{{ weather.current.temp_unit }}
-            </p>
+          <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+            <span><i class="fa-solid fa-temperature-half me-1"></i> Feels like {{ weather.current.feels_like }}{{ weather.current.temp_unit }}</span>
+            <span class="badge bg-success-lt text-success"><i class="fa-solid fa-tower-broadcast me-1"></i> {{ weather.source }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Forecast -->
+    <!-- 7-Day Forecast Grid -->
     <div class="col-lg-8">
-      <div class="card h-100">
-        <div class="card-header border-0 bg-transparent">
-          <span class="card-title">Forecast</span>
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-header border-0 bg-transparent d-flex justify-content-between align-items-center">
+          <span class="card-title fw-bold">
+            <i class="fa-regular fa-calendar-days text-success me-1"></i> 7-Day Agricultural Forecast
+          </span>
+          <span class="text-muted small">Open-Meteo High-Resolution Model</span>
         </div>
         <div class="card-body p-0">
           <div class="row g-0">
             {% for day in weather.forecast %}
-            <div class="col-12 col-sm-6 col-lg-4 border-start">
-              <div class="forecast-day text-center py-3" data-weather-forecast>
-                <div class="text-muted small" data-weather-date>{{ day.date }}</div>
-                <i class="fa-solid fa-{{ day.icon | default:'cloud' }}" data-weather-icon style="font-size: 2rem; color: #f59e0b; display: block; margin: 0.5rem 0;"></i>
-                <strong data-weather-range>{{ day.temperature_max }}° / {{ day.temperature_min }}°</strong>
-                <div class="text-muted small" data-weather-condition>{{ day.condition }}</div>
-                <div class="text-muted small" data-weather-pop {% if day.pop <= 0 %}hidden{% endif %}>{{ day.pop }}% precip.</div>
+            <div class="col-6 col-md-3 col-lg-3 border-bottom border-end p-3 text-center forecast-day" data-weather-forecast>
+              <div class="text-muted small fw-semibold" data-weather-date>{{ day.date }}</div>
+              <i class="fa-solid fa-{{ day.icon|default:'cloud' }} weather-icon weather-icon--forecast" data-weather-icon></i>
+              <strong class="d-block small text-dark" data-weather-range>{{ day.temperature_max }}° / {{ day.temperature_min }}°</strong>
+              <div class="text-muted small" data-weather-condition style="font-size: 0.75rem;">{{ day.description|default:day.condition }}</div>
+              {% if day.rain_sum %}
+              <div class="badge bg-info-lt text-info mt-1" style="font-size: 0.65rem;">
+                <i class="fa-solid fa-droplet me-1"></i>{{ day.rain_sum }} {{ day.precip_unit|default:"mm" }}
               </div>
+              {% elif day.pop %}
+              <div class="small text-muted mt-1" style="font-size: 0.7rem;">{{ day.pop }}% precip</div>
+              {% endif %}
             </div>
             {% endfor %}
           </div>
@@ -128,63 +171,80 @@
     </div>
   </div>
 
-  <!-- Weather-related agricultural advice -->
-  <div class="card mb-4">
+  <!-- Weather-Related Agricultural Advice -->
+  <div class="card border-0 shadow-sm mb-4">
     <div class="card-header border-0 bg-transparent">
-      <span class="card-title">Farming Guidance from Weather</span>
+      <span class="card-title fw-bold">
+        <i class="fa-solid fa-seedling text-success me-1"></i> Farming Guidance Derived from Weather
+      </span>
     </div>
-    <div class="card-body">
+    <div class="card-body pt-0">
       <div class="row g-3">
         <div class="col-12 col-md-6 col-lg-3">
-          <div class="card border-0 bg-light h-100">
-            <div class="card-body text-center">
-              <i class="fa-solid fa-tap text-primary fa-2x mb-2"></i>
-              <h6 class="card-title">Irrigation</h6>
-              <p class="small text-muted">Schedule watering based on rainfall and evapotranspiration. Avoid irrigating immediately before heavy rain.</p>
+          <div class="card border p-3 bg-light h-100 weather-guidance-card">
+            <div class="text-center">
+              <i class="fa-solid fa-faucet-drip text-primary fa-2x mb-2"></i>
+              <h5 class="card-title mb-1">Irrigation</h5>
+              <p class="small text-muted mb-0">Schedule watering based on rainfall predictions. Postpone irrigation when rainfall exceeds 25 mm/day.</p>
             </div>
           </div>
         </div>
         <div class="col-12 col-md-6 col-lg-3">
-          <div class="card border-0 bg-light h-100">
-            <div class="card-body text-center">
-              <i class="fa-solid fa-seedling text-success fa-2x mb-2"></i>
-              <h6 class="card-title">Planting</h6>
-              <p class="small text-muted">Plan planting around favorable temperature and moisture windows from the forecast.</p>
+          <div class="card border p-3 bg-light h-100 weather-guidance-card">
+            <div class="text-center">
+              <i class="fa-solid fa-plant-wilt text-success fa-2x mb-2"></i>
+              <h5 class="card-title mb-1">Planting &amp; Sowing</h5>
+              <p class="small text-muted mb-0">Ensure soil temperature and moisture levels are favorable before transplanting delicate seedlings.</p>
             </div>
           </div>
         </div>
         <div class="col-12 col-md-6 col-lg-3">
-          <div class="card border-0 bg-light h-100">
-            <div class="card-body text-center">
+          <div class="card border p-3 bg-light h-100 weather-guidance-card">
+            <div class="text-center">
               <i class="fa-solid fa-spray-can text-warning fa-2x mb-2"></i>
-              <h6 class="card-title">Spraying</h6>
-              <p class="small text-muted">Avoid spraying during high wind or when rain is expected within 24 hours.</p>
+              <h5 class="card-title mb-1">Foliar Spraying</h5>
+              <p class="small text-muted mb-0">Avoid spraying agrochemicals when wind speeds exceed 25 km/h or rain is forecast within 6 hours.</p>
             </div>
           </div>
         </div>
         <div class="col-12 col-md-6 col-lg-3">
-          <div class="card border-0 bg-light h-100">
-            <div class="card-body text-center">
-              <i class="fa-solid fa-wheat text-secondary fa-2x mb-2"></i>
-              <h6 class="card-title">Harvesting</h6>
-              <p class="small text-muted">Time harvest during dry weather windows to reduce post-harvest losses.</p>
+          <div class="card border p-3 bg-light h-100 weather-guidance-card">
+            <div class="text-center">
+              <i class="fa-solid fa-wheat-awn text-secondary fa-2x mb-2"></i>
+              <h5 class="card-title mb-1">Harvest Timing</h5>
+              <p class="small text-muted mb-0">Plan grain and vegetable harvesting during dry spells to prevent post-harvest mold and spoilage.</p>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 
-{% else %}
-<div class="card text-center p-5">
-  <div class="empty-icon">
-    <i class="fa-solid fa-cloud-sun fa-3x text-muted"></i>
+<!-- Modal: Change Farm Location -->
+<div class="modal fade" id="changeLocationModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-location-dot text-success me-2"></i> Configure Farm Location</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'weather_api' %}" id="modalLocationForm">
+        {% csrf_token %}
+        <div class="modal-body">
+          <label for="modalLocationInput" class="form-label">City, Municipality, or Province</label>
+          <input type="text" name="location" id="modalLocationInput" class="form-control" placeholder="e.g. Cauayan, Isabela" value="{{ pref.farm_location }}" maxlength="255" required>
+          <div class="form-hint mt-2">Open-Meteo geocoding will automatically pinpoint GPS coordinates and fetch live local forecasts.</div>
+          <div class="alert alert-danger mt-3 mb-0 d-none" id="modalLocationError" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success" id="modalLocationSave">Save Location &amp; Update</button>
+        </div>
+      </form>
+    </div>
   </div>
-  <p class="empty-title">No weather data available</p>
-  <p class="empty-subtitle">Configure your farm location in Settings and ensure the weather provider is configured.</p>
-</div>
-{% endif %}
 </div>
 {% endblock %}
 
@@ -192,107 +252,100 @@
 <script>
 (function () {
   var refreshBtn = document.getElementById('weatherRefresh');
-  if (!refreshBtn) return;
+  var refreshIcon = document.getElementById('weatherRefreshIcon');
 
-  function refreshWeather(showError) {
-    if (document.hidden || refreshBtn.disabled) return;
+  function triggerRefresh() {
+    if (!refreshBtn || refreshBtn.disabled) return;
     refreshBtn.disabled = true;
-    var icon = refreshBtn.querySelector('i');
-    if (icon) icon.classList.add('fa-spin');
+    if (refreshIcon) refreshIcon.classList.add('fa-spin');
 
     fetch('{% url 'weather_api' %}')
-      .then(function (resp) {
-        if (!resp.ok) throw new Error('Weather refresh failed (' + resp.status + ').');
-        return resp.json();
-      })
-      .then(function (data) {
-        if (!data.available || !data.current) {
-          if (showError) alert(data.error || 'Unable to refresh weather data.');
-          else if (data.error) console.error(data.error);
-          return;
-        }
-        if (!document.getElementById('weatherTemperature')) {
+      .then(function(resp) {
+        return resp.json().then(function(data) {
+          if (!resp.ok || !data.available) {
+            throw new Error(data.error || 'Unable to retrieve weather data.');
+          }
           window.location.reload();
-          return;
-        }
-
-        var current = data.current;
-        var updated = data.updated_at ? new Date(data.updated_at * 1000) : new Date();
-        var setText = function (id, value) {
-          var element = document.getElementById(id);
-          if (element) element.textContent = value;
-        };
-        setText('weatherLocation', data.location);
-        setText('weatherUpdated', updated.toLocaleString([], {
-          month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
-        }));
-        setText('weatherTemperature', current.temperature);
-        setText('weatherTempUnit', current.temp_unit);
-        setText('weatherCondition', current.condition);
-        setText('weatherDescription', current.description);
-        setText('weatherHumidity', current.humidity + '%');
-        setText('weatherWind', current.wind_speed + ' ' + current.wind_unit);
-        var rainAmount = Number(current.rain_1h || 0);
-        var rainItem = document.getElementById('weatherRainItem');
-        if (rainAmount > 0) {
-          if (!rainItem) {
-            var details = document.getElementById('weatherDetails');
-            if (details) {
-              rainItem = document.createElement('div');
-              rainItem.className = 'weather-detail-item';
-              rainItem.id = 'weatherRainItem';
-              var rainValue = document.createElement('span');
-              rainValue.className = 'weather-detail-value';
-              rainValue.id = 'weatherRain';
-              var rainLabel = document.createElement('span');
-              rainLabel.className = 'weather-detail-label';
-              rainLabel.textContent = 'Rain (1h)';
-              rainItem.appendChild(rainValue);
-              rainItem.appendChild(rainLabel);
-              details.appendChild(rainItem);
-            }
-          }
-          setText('weatherRain', rainAmount + ' mm/h');
-        } else if (rainItem) {
-          rainItem.parentNode.removeChild(rainItem);
-        }
-        var currentIcon = document.getElementById('weatherIcon');
-        if (currentIcon) currentIcon.className = 'fa-solid fa-' + current.icon;
-
-        var forecastNodes = document.querySelectorAll('[data-weather-forecast]');
-        (data.forecast || []).slice(0, forecastNodes.length).forEach(function (day, index) {
-          var node = forecastNodes[index];
-          var range = node.querySelector('[data-weather-range]');
-          var condition = node.querySelector('[data-weather-condition]');
-          var date = node.querySelector('[data-weather-date]');
-          var icon = node.querySelector('[data-weather-icon]');
-          var precipitation = node.querySelector('[data-weather-pop]');
-          if (range) range.textContent = day.temperature_max + '° / ' + day.temperature_min + '°';
-          if (condition) condition.textContent = day.condition;
-          if (date) {
-            date.textContent = new Date(day.date + 'T12:00:00').toLocaleDateString([], {
-              weekday: 'short', month: 'short', day: 'numeric'
-            });
-          }
-          if (icon) icon.className = 'fa-solid fa-' + day.icon;
-          if (precipitation) {
-            precipitation.textContent = day.pop + '% precip.';
-            precipitation.hidden = day.pop <= 0;
-          }
         });
       })
-      .catch(function (error) {
-        console.error(error);
-        if (showError) alert(error.message || 'Network error while refreshing weather.');
+      .catch(function(err) {
+        alert(err.message || 'Unable to refresh weather data.');
       })
-      .finally(function () {
+      .finally(function() {
         refreshBtn.disabled = false;
-        if (icon) icon.classList.remove('fa-spin');
+        if (refreshIcon) refreshIcon.classList.remove('fa-spin');
       });
   }
 
-  refreshBtn.addEventListener('click', function () { refreshWeather(true); });
-  window.setInterval(function () { refreshWeather(false); }, 10 * 60 * 1000);
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', triggerRefresh);
+  }
+
+  function handleLocationForm(form, input, button, errorElement, idleLabel) {
+    if (!form || !input || !button) return;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (form.dataset.submitting === 'true') return;
+
+      input.value = input.value.trim();
+      input.setCustomValidity(input.value ? '' : 'Enter a city, municipality, or province.');
+      if (!form.reportValidity()) return;
+
+      form.dataset.submitting = 'true';
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Fetching...';
+      if (errorElement) {
+        errorElement.textContent = '';
+        errorElement.classList.add('d-none');
+      }
+
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(function(res) {
+          return res.json().then(function(data) {
+            if (!res.ok || !data.available) {
+              throw new Error(data.error || 'Could not retrieve weather for that location.');
+            }
+          });
+        })
+        .then(function() {
+          window.location.reload();
+        })
+        .catch(function(error) {
+          var message = error.message || 'Could not retrieve weather for that location.';
+          if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('d-none');
+          } else {
+            alert(message);
+          }
+        })
+        .finally(function() {
+          form.dataset.submitting = 'false';
+          button.disabled = false;
+          button.textContent = idleLabel;
+        });
+    });
+  }
+
+  handleLocationForm(
+    document.getElementById('modalLocationForm'),
+    document.getElementById('modalLocationInput'),
+    document.getElementById('modalLocationSave'),
+    document.getElementById('modalLocationError'),
+    'Save Location & Update'
+  );
+  handleLocationForm(
+    document.getElementById('inlineLocationForm'),
+    document.getElementById('inlineLocationInput'),
+    document.getElementById('btnSaveInlineLocation'),
+    null,
+    'Save & Fetch Weather'
+  );
 })();
 </script>
 {% endblock %}

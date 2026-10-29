@@ -1,10 +1,11 @@
 {% load static %}
-<html lang="en">
+<html lang="en" data-theme-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-theme-preference="{% if request.user.is_authenticated %}{{ request.user.preference.theme|default:'light' }}{% else %}light{% endif %}">
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>{% block title %}SMART AGRIASSIST{% endblock %}</title>
+    <script src="{% static 'js/app-theme.js' %}"></script>
     <link href="{% static 'css/tabler.css' %}" rel="stylesheet"/>
     <link href="{% static 'css/app-theme.css' %}" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
@@ -34,10 +35,53 @@
 
     </div>
 
-    <script src="{% static 'js/tabler-theme.js' %}"></script>
     <script src="{% static 'js/tabler.js' %}"></script>
     <script src="{% static 'libs/list.js/dist/list.min.js' %}" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      (function () {
+        var badge = document.querySelector('[data-notification-unread]');
+        if (!badge) return;
+
+        window.updateNotificationUnreadCount = function (count) {
+          if (!Number.isInteger(count) || count < 0) return;
+          badge.textContent = count > 99 ? '99+' : String(count);
+          badge.classList.toggle('d-none', count === 0);
+          badge.setAttribute('aria-label', count + ' unread notifications');
+        };
+
+        if (document.getElementById('notificationsPage')) return;
+
+        var countUrl = badge.dataset.countUrl;
+        if (!countUrl) return;
+        var requestInFlight = false;
+        function refreshUnreadCount() {
+          if (requestInFlight || document.visibilityState !== 'visible') return;
+          requestInFlight = true;
+          fetch(countUrl + '?count_only=1', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+          }).then(function (response) {
+            if (!response.ok) throw new Error('Unable to refresh notification count (' + response.status + ').');
+            return response.json();
+          }).then(function (data) {
+            if (!Number.isInteger(data.unread_count) || data.unread_count < 0) {
+              throw new Error('The notification count response was invalid.');
+            }
+            window.updateNotificationUnreadCount(data.unread_count);
+          }).catch(function (error) {
+            console.error('Unable to refresh notification count.', error);
+          }).finally(function () {
+            requestInFlight = false;
+          });
+        }
+
+        refreshUnreadCount();
+        window.setInterval(refreshUnreadCount, 45000);
+        document.addEventListener('visibilitychange', refreshUnreadCount);
+        window.addEventListener('focus', refreshUnreadCount);
+      })();
+    </script>
     {% block extra_js %}{% endblock %}
   </body>
 </html>

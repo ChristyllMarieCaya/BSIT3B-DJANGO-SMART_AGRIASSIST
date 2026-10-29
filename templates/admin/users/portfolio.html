@@ -1,0 +1,746 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ target_user.get_full_name|default:target_user.username }} | Farmer Portfolio | SMART AGRIASSIST
+Admin{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'admin:index' %}">Admin</a>
+<span>&rsaquo;</span>
+<a href="{% url 'admin:auth_user_changelist' %}">User Management</a>
+<span>&rsaquo;</span>
+<span class="admin-topbar-crumb fw-semibold">{{ target_user.get_full_name|default:target_user.username }}</span>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Top Navigation & Return Link -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <a href="{% url 'admin:auth_user_changelist' %}"
+      class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back to User Management</span>
+    </a>
+    <div class="text-muted small">
+      User Identifier: <strong class="text-body">#{{ target_user.pk }}</strong> &bull; System Role:
+      <strong class="text-body">
+        {% if target_user.is_superuser %}
+        Superuser
+        {% elif target_user.is_staff %}
+        Administrator
+        {% else %}
+        Farmer
+        {% endif %}
+      </strong>
+    </div>
+  </div>
+
+  <!-- Profile Hero Header -->
+  <section class="admin-card mb-4" aria-labelledby="portfolioHeaderTitle">
+    <div class="admin-card-body p-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-4">
+
+        <!-- User Details -->
+        <div class="d-flex align-items-center gap-3">
+          <div class="admin-portfolio-avatar">
+            {{ target_user.first_name|default:target_user.username|first|upper }}
+          </div>
+          <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <h1 id="portfolioHeaderTitle" class="h2 fw-bold admin-heading mb-0">
+                {{ target_user.get_full_name|default:target_user.username }}
+              </h1>
+              {% if target_user.is_superuser %}
+              <span class="badge bg-purple-lt"><i class="fa-solid fa-shield-halved me-1"></i>Superuser</span>
+              {% elif target_user.is_staff %}
+              <span class="badge bg-blue-lt"><i class="fa-solid fa-user-shield me-1"></i>Administrator</span>
+              {% else %}
+              <span class="badge bg-green-lt"><i class="fa-solid fa-seedling me-1"></i>Farmer</span>
+              {% endif %}
+
+              {% if target_user.is_active %}
+              <span class="badge bg-success-lt"><i class="fa-solid fa-circle-check me-1"></i>Active Account</span>
+              {% else %}
+              <span class="badge bg-danger-lt"><i class="fa-solid fa-circle-xmark me-1"></i>Inactive /
+                Deactivated</span>
+              {% endif %}
+            </div>
+
+            <div class="text-muted small d-flex flex-wrap align-items-center gap-3">
+              <span><i class="fa-solid fa-at text-muted me-1"></i>{{ target_user.username }}</span>
+              {% if target_user.email %}
+              <span><i class="fa-solid fa-envelope text-muted me-1"></i>{{ target_user.email }}</span>
+              {% endif %}
+              <span><i class="fa-regular fa-calendar text-muted me-1"></i>Joined {{ target_user.date_joined|date:"M j, Y" }}</span>
+              <span><i class="fa-regular fa-clock text-muted me-1"></i>Last active {{ target_user.last_login|date:"M j, Y, g:i a"|default:"Never" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="d-flex flex-wrap gap-2 align-self-stretch align-self-lg-auto justify-content-end">
+          <a href="{% url 'admin:auth_user_change' target_user.pk %}"
+            class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-pen-to-square"></i>
+            <span>Edit Account</span>
+          </a>
+          <a href="{% url 'admin:auth_user_password_change' target_user.pk %}"
+            class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-key"></i>
+            <span>Change Password</span>
+          </a>
+          {% if target_user != user %}
+          <form method="post" action="{% url 'admin_user_portfolio' target_user.pk %}"
+            style="display: inline; margin: 0;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_status">
+            {% if target_user.is_active %}
+            <button type="submit" class="btn btn-outline-danger d-inline-flex align-items-center gap-2"
+              onclick="return confirm('Are you sure you want to deactivate account @{{ target_user.username }}?');">
+              <i class="fa-solid fa-user-slash"></i>
+              <span>Deactivate</span>
+            </button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-success d-inline-flex align-items-center gap-2">
+              <i class="fa-solid fa-user-check"></i>
+              <span>Activate</span>
+            </button>
+            {% endif %}
+          </form>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Aggregated Metric Summary Cards -->
+  <div class="row g-3 mb-4" aria-label="Portfolio summary metrics">
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Registered Crops</div>
+        <div class="admin-stat-number text-success">{{ total_crops_count }}</div>
+        <div class="small text-muted"><strong>{{ active_crops_count }}</strong> growing &bull; {{ harvested_crops_count
+          }} harvested</div>
+        <div class="admin-stat-icon icon-leaf">
+          <i class="fa-solid fa-wheat-awn"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Total Planted Land</div>
+        <div class="admin-stat-number">{{ total_area_ha }} <span style="font-size: 1rem; font-weight: normal;">ha</span>
+        </div>
+        <div class="small text-muted">{{ total_area_sqm|floatformat:0 }} m&sup2; recorded land</div>
+        <div class="admin-stat-icon icon-users">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Scheduled Reminders</div>
+        <div class="admin-stat-number {% if overdue_reminders_count %}text-danger{% else %}text-warning{% endif %}">
+          {{ total_reminders_count }}
+        </div>
+        <div class="small text-muted">
+          <strong>{{ pending_reminders_count }}</strong> pending
+          {% if overdue_reminders_count %}
+          &bull; <span class="text-danger fw-bold">{{ overdue_reminders_count }} overdue</span>
+          {% endif %}
+        </div>
+        <div class="admin-stat-icon icon-tasks">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">AI Crop Diagnoses</div>
+        <div class="admin-stat-number text-primary">{{ total_diagnoses_count }}</div>
+        <div class="small text-muted"><strong>{{ confirmed_diagnoses_count }}</strong> confirmed diagnoses</div>
+        <div class="admin-stat-icon icon-brain">
+          <i class="fa-solid fa-stethoscope"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Farm Profile, Crops Portfolio, Reminders, and AI Diagnoses -->
+    <div class="col-12 col-xl-8">
+
+      <!-- 1. Farm Information -->
+      <section class="admin-card mb-4" aria-labelledby="farmInfoTitle">
+        <div class="admin-card-header d-flex justify-content-between align-items-center">
+          <h2 id="farmInfoTitle" class="admin-card-title mb-0">
+            <i class="fa-solid fa-tractor text-success me-2" aria-hidden="true"></i>Farm &amp; Agricultural Land
+          </h2>
+          {% if farm_location %}
+          <a href="{% url 'admin_weather' %}?location={{ farm_location|urlencode }}"
+            class="btn btn-sm btn-outline-success">
+            <i class="fa-solid fa-cloud-sun me-1"></i> Farm Weather Telemetry &rarr;
+          </a>
+          {% endif %}
+        </div>
+        <div class="admin-card-body">
+          <div class="row g-3">
+            <div class="col-sm-6 col-md-4">
+              <div class="text-muted small">Farm / Plot Name</div>
+              <div class="fw-semibold">{{ farm_name|default:"Not specified" }}</div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <div class="text-muted small">Location / Municipality</div>
+              <div class="fw-semibold">{{ farm_location|default:"Not specified" }}</div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <div class="text-muted small">Geographic Coordinates</div>
+              <div class="fw-semibold">{{ coordinates|default:"Not calibrated" }}</div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <div class="text-muted small">Weather Monitoring</div>
+              <div>
+                {% if weather_monitoring %}
+                <span class="badge bg-success-lt"><i class="fa-solid fa-check me-1"></i>Enabled</span>
+                {% else %}
+                <span class="badge bg-secondary-lt">Disabled</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <div class="text-muted small">Language &amp; Units</div>
+              <div class="fw-semibold">
+                {{ preference.preferred_language|default:"en"|upper }} &bull;
+                {{ preference.measurement_units|default:"Metric"|capfirst }}
+                ({{ preference.temperature_unit|default:"celsius"|capfirst }})
+              </div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+              <div class="text-muted small">Timezone</div>
+              <div class="fw-semibold">{{ preference.timezone|default:"Asia/Manila" }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Crops Portfolio -->
+      <section class="admin-card mb-4" aria-labelledby="cropsPortfolioTitle">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h2 id="cropsPortfolioTitle" class="admin-card-title mb-0">
+              <i class="fa-solid fa-wheat-awn text-success me-2" aria-hidden="true"></i>Registered Crops Portfolio
+            </h2>
+            <span class="text-muted small">{{ total_crops_count }} crop record{{ total_crops_count|pluralize }}
+              associated with this farmer</span>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'admin:crops_crop_changelist' %}?owner__id__exact={{ target_user.pk }}"
+              class="btn btn-sm btn-outline-secondary">
+              View in Table
+            </a>
+            <a href="{% url 'admin:crops_crop_add' %}"
+              class="btn btn-sm btn-success d-inline-flex align-items-center gap-1">
+              <i class="fa-solid fa-plus"></i>
+              <span>Register Crop</span>
+            </a>
+          </div>
+        </div>
+
+        {% if crops %}
+        <div class="table-responsive">
+          <table class="table table-vcenter admin-table-compact mb-0">
+            <thead>
+              <tr>
+                <th>Crop &amp; Variety</th>
+                <th>Field / Plot</th>
+                <th>Planting Date</th>
+                <th>Current Stage</th>
+                <th>Lifecycle Progress</th>
+                <th>Area</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for crop in crops %}
+              <tr>
+                <td>
+                  <a href="{% url 'admin:crops_crop_change' crop.pk %}" class="fw-bold text-decoration-none text-body">
+                    {{ crop.crop_name }}
+                  </a>
+                  {% if crop.variety %}
+                  <div class="small text-muted">{{ crop.variety }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="text-muted">{{ crop.field_name|default:"Main Field" }}</span>
+                </td>
+                <td>
+                  <span class="small">{{ crop.planting_date|date:"M j, Y" }}</span>
+                  <div class="small text-muted">{{ crop.days_since_planting }} days ago</div>
+                </td>
+                <td>
+                  <span class="badge bg-green-lt">{{ crop.current_stage_name }}</span>
+                </td>
+                <td style="min-width: 140px;">
+                  <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>{{ crop.overall_progress|floatformat:0 }}%</span>
+                    <span>
+                      {% if crop.days_until_harvest > 0 %}
+                      {{ crop.days_until_harvest }}d left
+                      {% elif crop.days_until_harvest == 0 %}
+                      Harvest now
+                      {% else %}
+                      Matured
+                      {% endif %}
+                    </span>
+                  </div>
+                  <div class="progress progress-sm" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: {{ crop.overall_progress|default:0 }}%;"></div>
+                  </div>
+                </td>
+                <td>
+                  <span class="small">{{ crop.area_sqm|floatformat:0 }} m&sup2;</span>
+                </td>
+                <td>
+                  {% if crop.status == 'active' %}
+                  <span class="badge bg-success-lt">Active</span>
+                  {% elif crop.status == 'harvested' %}
+                  <span class="badge bg-blue-lt">Harvested</span>
+                  {% elif crop.status == 'lost' %}
+                  <span class="badge bg-danger-lt">Crop Loss</span>
+                  {% else %}
+                  <span class="badge bg-secondary-lt">Planned</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'admin:crops_crop_change' crop.pk %}" class="btn btn-sm btn-outline-success py-1 px-2"
+                    style="font-size: 11px;">
+                    Inspect &rarr;
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="admin-empty-state text-center p-5">
+          <i class="fa-solid fa-wheat-awn text-muted mb-3" style="font-size: 2.5rem; opacity: 0.5;"></i>
+          <h3 class="h4 text-muted mb-1">No crops registered yet</h3>
+          <p class="text-muted small mb-3">This farmer account does not currently have active or planned crops on file.
+          </p>
+          <a href="{% url 'admin:crops_crop_add' %}" class="btn btn-sm btn-success">
+            <i class="fa-solid fa-plus me-1"></i> Register First Crop
+          </a>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- 3. Scheduled Reminders -->
+      <section class="admin-card mb-4" aria-labelledby="remindersTitle">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h2 id="remindersTitle" class="admin-card-title mb-0">
+              <i class="fa-regular fa-clock text-warning me-2" aria-hidden="true"></i>Scheduled Farm Care Reminders
+            </h2>
+            <span class="text-muted small">{{ pending_reminders_count }} pending activity task{{
+              pending_reminders_count|pluralize }}</span>
+          </div>
+          <a href="{% url 'admin:crops_scheduledreminder_changelist' %}?user__id__exact={{ target_user.pk }}"
+            class="btn btn-sm btn-outline-secondary">
+            View All in Table &rarr;
+          </a>
+        </div>
+
+        {% if reminders %}
+        <div class="table-responsive">
+          <table class="table table-vcenter admin-table-compact mb-0">
+            <thead>
+              <tr>
+                <th>Activity Title</th>
+                <th>Associated Crop</th>
+                <th>Activity Type</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th class="text-end">Record</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rem in reminders %}
+              <tr>
+                <td>
+                  <strong class="text-body">{{ rem.title }}</strong>
+                  {% if rem.is_automated %}
+                  <span class="badge bg-secondary-lt ms-1" style="font-size: 0.65rem;">Automated</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if rem.crop %}
+                  <a href="{% url 'admin:crops_crop_change' rem.crop.pk %}"
+                    class="text-success text-decoration-none small">
+                    <i class="fa-solid fa-seedling me-1"></i>{{ rem.crop.crop_name }}
+                  </a>
+                  {% else %}
+                  <span class="text-muted small">General Farm</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="small text-muted">{{ rem.get_activity_type_display }}</span>
+                </td>
+                <td>
+                  <span class="small {% if rem.is_overdue %}text-danger fw-bold{% endif %}">
+                    {{ rem.due_date|date:"M j, Y" }}
+                  </span>
+                  {% if rem.is_overdue %}
+                  <span class="badge bg-danger-lt ms-1">Overdue</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if rem.status == 'completed' %}
+                  <span class="badge bg-success-lt"><i class="fa-solid fa-check me-1"></i>Completed</span>
+                  {% elif rem.status == 'pending' %}
+                  <span class="badge bg-warning-lt">Pending</span>
+                  {% elif rem.status == 'cancelled' %}
+                  <span class="badge bg-secondary-lt">Cancelled</span>
+                  {% else %}
+                  <span class="badge bg-danger-lt">Overdue</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="{% url 'admin:crops_scheduledreminder_change' rem.pk %}"
+                    class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size: 11px;">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="admin-empty-state text-center p-4">
+          <i class="fa-regular fa-clock text-muted mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+          <p class="text-muted small mb-0">No field care reminders scheduled for this farmer.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- 4. AI Disease Diagnoses -->
+      <section class="admin-card mb-4" aria-labelledby="aiDiagnosisTitle">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h2 id="aiDiagnosisTitle" class="admin-card-title mb-0">
+              <i class="fa-solid fa-stethoscope text-primary me-2" aria-hidden="true"></i>AI Crop Health Diagnoses
+            </h2>
+            <span class="text-muted small">{{ total_diagnoses_count }} diagnosis record{{
+              total_diagnoses_count|pluralize }} generated</span>
+          </div>
+          <a href="{% url 'admin:core_cropdiagnosis_changelist' %}?user__id__exact={{ target_user.pk }}"
+            class="btn btn-sm btn-outline-secondary">
+            View All Diagnoses &rarr;
+          </a>
+        </div>
+
+        {% if diagnoses %}
+        <div class="admin-card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for diag in diagnoses %}
+            <div class="list-group-item p-3">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-body">{{ diag.crop_name|default:"Crop Specimen" }} &mdash; {{
+                      diag.possible_disease }}</span>
+                    {% if diag.is_confirmed %}
+                    <span class="badge bg-success-lt"><i class="fa-solid fa-certificate me-1"></i>Confirmed by
+                      Tech</span>
+                    {% else %}
+                    <span class="badge bg-secondary-lt"><i class="fa-solid fa-robot me-1"></i>AI Suggested</span>
+                    {% endif %}
+                  </div>
+                  <div class="small text-muted mt-1">
+                    Confidence: <strong>{{ diag.confidence_level }}</strong> ({{ diag.confidence_score|floatformat:2 }})
+                    &bull; Recorded on {{ diag.created_at|date:"M j, Y, g:i a" }}
+                  </div>
+                </div>
+                <a href="{% url 'admin:core_cropdiagnosis_change' diag.pk %}"
+                  class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 11px;">
+                  Inspect Record &rarr;
+                </a>
+              </div>
+              {% if diag.observed_symptoms %}
+              <div class="small text-muted mb-2">
+                <strong>Symptoms observed:</strong> {{ diag.observed_symptoms|truncatechars:180 }}
+              </div>
+              {% endif %}
+              {% if diag.treatment_recommendations %}
+              <div class="p-2 rounded small"
+                style="background-color: var(--agri-card-secondary); border: 1px solid var(--agri-border);">
+                <strong class="text-success"><i class="fa-solid fa-shield-virus me-1"></i>Treatment Guidance:</strong>
+                <span class="text-body">{{ diag.treatment_recommendations|truncatechars:220 }}</span>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="admin-empty-state text-center p-4">
+          <i class="fa-solid fa-stethoscope text-muted mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+          <p class="text-muted small mb-0">No AI crop health diagnoses logged for this farmer account.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- 5. Active Weather Alerts -->
+      <section class="admin-card mb-4" aria-labelledby="weatherAlertsTitle">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h2 id="weatherAlertsTitle" class="admin-card-title mb-0">
+              <i class="fa-solid fa-cloud-bolt text-warning me-2" aria-hidden="true"></i>Active Weather Alerts
+            </h2>
+            <span class="text-muted small">{{ weather_alerts|length }} active alert{{ weather_alerts|length|pluralize }}
+              for this farmer</span>
+          </div>
+          {% if farm_location %}
+          <a href="{% url 'admin_weather' %}?location={{ farm_location|urlencode }}"
+            class="btn btn-sm btn-outline-secondary">
+            View Farm Weather &rarr;
+          </a>
+          {% endif %}
+        </div>
+
+        {% if weather_alerts %}
+        <div class="admin-card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for alert in weather_alerts %}
+            <div class="list-group-item p-3">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    {% if alert.severity == 'critical' %}
+                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{
+                      alert.get_severity_display }}</span>
+                    {% elif alert.severity == 'warning' %}
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-exclamation me-1"></i>{{
+                      alert.get_severity_display }}</span>
+                    {% elif alert.severity == 'watch' %}
+                    <span class="badge bg-orange-lt"><i class="fa-solid fa-eye me-1"></i>{{ alert.get_severity_display
+                      }}</span>
+                    {% elif alert.severity == 'advisory' %}
+                    <span class="badge bg-info-lt"><i class="fa-solid fa-info-circle me-1"></i>{{
+                      alert.get_severity_display }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary-lt">{{ alert.get_severity_display }}</span>
+                    {% endif %}
+                    <span class="fw-bold text-body">{{ alert.title }}</span>
+                  </div>
+                  <div class="small text-muted">
+                    <i class="fa-solid fa-location-dot me-1"></i>{{ alert.farm_location }}
+                    &bull; {{ alert.created_at|timesince }} ago
+                    {% if alert.expected_timing %}&bull; Expected: {{ alert.expected_timing }}{% endif %}
+                  </div>
+                </div>
+                <a href="{% url 'admin_weather' %}?location={{ alert.farm_location|urlencode }}"
+                  class="btn btn-sm btn-outline-warning py-1 px-2" style="font-size: 11px;">
+                  Details &rarr;
+                </a>
+              </div>
+              {% if alert.agricultural_impact %}
+              <div class="small text-muted mt-2">
+                <strong class="text-warning"><i class="fa-solid fa-wheat-awn me-1"></i>Farm Impact:</strong>
+                {{ alert.agricultural_impact|truncatechars:200 }}
+              </div>
+              {% endif %}
+              {% if alert.precautionary_actions %}
+              <div class="p-2 rounded small mt-2"
+                style="background-color: var(--agri-card-secondary); border: 1px solid var(--agri-border);">
+                <strong class="text-success"><i class="fa-solid fa-shield-halved me-1"></i>Recommended Actions:</strong>
+                <span class="text-body">{{ alert.precautionary_actions|truncatechars:200 }}</span>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="admin-empty-state text-center p-4">
+          <i class="fa-solid fa-cloud-sun text-muted mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+          <p class="text-muted small mb-0">No active weather alerts for this farmer's location.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- 5. Active Weather Alerts -->
+      <section class="admin-card mb-4" aria-labelledby="weatherAlertsTitle">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h2 id="weatherAlertsTitle" class="admin-card-title mb-0">
+              <i class="fa-solid fa-cloud-bolt text-warning me-2" aria-hidden="true"></i>Active Weather Alerts
+            </h2>
+            <span class="text-muted small">{{ weather_alerts|length }} active alert{{ weather_alerts|length|pluralize }}
+              for this farmer</span>
+          </div>
+          {% if farm_location %}
+          <a href="{% url 'admin_weather' %}?location={{ farm_location|urlencode }}"
+            class="btn btn-sm btn-outline-secondary">
+            View Farm Weather &rarr;
+          </a>
+          {% endif %}
+        </div>
+
+        {% if weather_alerts %}
+        <div class="admin-card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for alert in weather_alerts %}
+            <div class="list-group-item p-3">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    {% if alert.severity == 'critical' %}
+                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{
+                      alert.get_severity_display }}</span>
+                    {% elif alert.severity == 'warning' %}
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-exclamation me-1"></i>{{
+                      alert.get_severity_display }}</span>
+                    {% elif alert.severity == 'watch' %}
+                    <span class="badge bg-orange-lt"><i class="fa-solid fa-eye me-1"></i>{{ alert.get_severity_display
+                      }}</span>
+                    {% elif alert.severity == 'advisory' %}
+                    <span class="badge bg-info-lt"><i class="fa-solid fa-info-circle me-1"></i>{{
+                      alert.get_severity_display }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary-lt">{{ alert.get_severity_display }}</span>
+                    {% endif %}
+                    <span class="fw-bold text-body">{{ alert.title }}</span>
+                  </div>
+                  <div class="small text-muted">
+                    <i class="fa-solid fa-location-dot me-1"></i>{{ alert.farm_location }}
+                    &bull; {{ alert.created_at|timesince }} ago
+                    {% if alert.expected_timing %}&bull; Expected: {{ alert.expected_timing }}{% endif %}
+                  </div>
+                </div>
+                <a href="{% url 'admin_weather' %}?location={{ alert.farm_location|urlencode }}"
+                  class="btn btn-sm btn-outline-warning py-1 px-2" style="font-size: 11px;">
+                  Details &rarr;
+                </a>
+              </div>
+              {% if alert.agricultural_impact %}
+              <div class="small text-muted mt-2">
+                <strong class="text-warning"><i class="fa-solid fa-wheat-awn me-1"></i>Farm Impact:</strong>
+                {{ alert.agricultural_impact|truncatechars:200 }}
+              </div>
+              {% endif %}
+              {% if alert.precautionary_actions %}
+              <div class="p-2 rounded small mt-2"
+                style="background-color: var(--agri-card-secondary); border: 1px solid var(--agri-border);">
+                <strong class="text-success"><i class="fa-solid fa-shield-halved me-1"></i>Recommended Actions:</strong>
+                <span class="text-body">{{ alert.precautionary_actions|truncatechars:200 }}</span>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="admin-empty-state text-center p-4">
+          <i class="fa-solid fa-cloud-sun text-muted mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+          <p class="text-muted small mb-0">No active weather alerts for this farmer's location.</p>
+        </div>
+        {% endif %}
+      </section>
+
+    </div>
+
+    <!-- Right Column: AI Assistant Activity & Chronological Activity Timeline -->
+    <div class="col-12 col-xl-4">
+
+      <!-- AI Assistant Activity Summary -->
+      <section class="admin-card mb-4" aria-labelledby="aiActivityTitle">
+        <div class="admin-card-header">
+          <h2 id="aiActivityTitle" class="admin-card-title mb-0">
+            <i class="fa-solid fa-robot text-success me-2" aria-hidden="true"></i>AI Assistant Activity
+          </h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom"
+            style="border-color: var(--agri-border) !important;">
+            <div>
+              <div class="h3 fw-bold mb-0">{{ total_conversations_count }}</div>
+              <div class="text-muted small">Total Conversations</div>
+            </div>
+            <div>
+              <div class="h3 fw-bold mb-0 text-success">{{ total_messages_count }}</div>
+              <div class="text-muted small">User Questions Sent</div>
+            </div>
+          </div>
+
+          {% if conversations %}
+          <div class="text-muted small fw-semibold mb-2">Recent AI Sessions:</div>
+          <div class="list-group list-group-flush mb-0">
+            {% for conv in conversations %}
+            <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center"
+              style="background: transparent;">
+              <div>
+                <div class="small fw-semibold text-body">Session {{ conv.started_at|date:"M j, Y" }}</div>
+                <div class="small text-muted">{{ conv.message_count }} message{{ conv.message_count|pluralize }}
+                  exchanged</div>
+              </div>
+              <span class="small text-muted">{{ conv.started_at|timesince }} ago</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">No conversational chat history recorded for this user.</p>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- Chronological Activity Timeline -->
+      <section class="admin-card mb-4" aria-labelledby="timelineTitle">
+        <div class="admin-card-header">
+          <h2 id="timelineTitle" class="admin-card-title mb-0">
+            <i class="fa-solid fa-timeline text-success me-2" aria-hidden="true"></i>Activity Timeline
+          </h2>
+        </div>
+        <div class="admin-card-body p-3">
+          {% if timeline_events %}
+          <div class="admin-timeline">
+            {% for ev in timeline_events %}
+            <div class="admin-timeline-item">
+              <div class="admin-timeline-badge bg-{{ ev.color }}">
+                <i class="{{ ev.icon }}"></i>
+              </div>
+              <div class="admin-timeline-content">
+                <div class="d-flex justify-content-between align-items-start gap-1">
+                  <div class="fw-semibold small text-body">{{ ev.title }}</div>
+                  <span class="text-muted" style="font-size: 0.7rem; white-space: nowrap;">{{ ev.timestamp|date:"M j"
+                    }}</span>
+                </div>
+                <div class="text-muted" style="font-size: 0.75rem;">{{ ev.details }}</div>
+                {% if ev.url %}
+                <a href="{{ ev.url }}" class="small text-success text-decoration-none mt-1 d-inline-block"
+                  style="font-size: 0.72rem;">
+                  View Record &rarr;
+                </a>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0 text-center py-3">No activity events recorded.</p>
+          {% endif %}
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

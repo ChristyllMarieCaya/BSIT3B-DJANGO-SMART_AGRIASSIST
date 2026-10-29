@@ -12,15 +12,8 @@
       </a>
     </div>
 
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#sidebar-menu"
-      aria-controls="sidebar-menu"
-      aria-expanded="false"
-      aria-label="Toggle navigation"
-    >
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu"
+      aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
@@ -31,10 +24,9 @@
           <span class="dh-nav-section">Assistant &amp; Overview</span>
         </li>
 
-      
-
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+            href="{% url 'dashboard' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-gauge"></i>
             </span>
@@ -42,8 +34,9 @@
           </a>
         </li>
 
-         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}" href="{% url 'ai_assistant' %}">
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}"
+            href="{% url 'ai_assistant' %}">
             <span class="nav-link-icon text-success">
               <i class="fa-solid fa-robot"></i>
             </span>
@@ -56,7 +49,8 @@
         </li>
 
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.app_name == 'crops' %}active{% endif %}" href="{% url 'crops:crop_tracker' %}">
+          <a class="nav-link {% if request.resolver_match.app_name == 'crops' %}active{% endif %}"
+            href="{% url 'crops:crop_tracker' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-chart-line"></i>
             </span>
@@ -65,7 +59,8 @@
         </li>
 
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'diagnoses_list' or request.resolver_match.url_name == 'diagnosis_detail' %}active{% endif %}" href="{% url 'diagnoses_list' %}">
+          <a class="nav-link {% if request.resolver_match.url_name == 'diagnoses_list' or request.resolver_match.url_name == 'diagnosis_detail' %}active{% endif %}"
+            href="{% url 'diagnoses_list' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-notes-medical"></i>
             </span>
@@ -74,7 +69,8 @@
         </li>
 
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'weather' %}active{% endif %}" href="{% url 'weather' %}">
+          <a class="nav-link {% if request.resolver_match.url_name == 'weather' %}active{% endif %}"
+            href="{% url 'weather' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-cloud-sun"></i>
             </span>
@@ -83,7 +79,8 @@
         </li>
 
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.app_name == 'catalog' %}active{% endif %}" href="{% url 'catalog:catalog_list' %}">
+          <a class="nav-link {% if request.resolver_match.app_name == 'catalog' %}active{% endif %}"
+            href="{% url 'catalog:catalog_list' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-book-open"></i>
             </span>
@@ -96,17 +93,22 @@
         </li>
 
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}">
+          <a class="nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}"
+            href="{% url 'notifications' %}">
             <span class="nav-link-icon">
-              <i class="fa-solid fa-bell{% if unread_count > 0 %}-ring text-danger{% endif %}" data-notification-icon></i>
+              <i class="fa-solid fa-bell{% if unread_count > 0 %}-ring text-danger{% endif %}"
+                data-notification-icon></i>
             </span>
             <span class="nav-link-title">Notifications</span>
-            <span class="badge bg-danger ms-2{% if unread_count == 0 %} d-none{% endif %}" data-notification-unread>{{ unread_count }}</span>
+            <span class="badge bg-danger ms-2{% if unread_count == 0 %} d-none{% endif %}"
+              data-notification-unread data-count-url="{% url 'notifications_api' %}"
+              aria-label="{{ unread_count }} unread notifications">{% if unread_count > 99 %}99+{% else %}{{ unread_count }}{% endif %}</span>
           </a>
         </li>
 
         <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" href="{% url 'settings' %}">
+          <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"
+            href="{% url 'settings' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-gear"></i>
             </span>
@@ -114,9 +116,25 @@
           </a>
         </li>
 
+        {% if user.is_staff or user.is_superuser %}
+        <li class="nav-item">
+          <span class="dh-nav-section">Administration</span>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link" href="{% url 'admin:index' %}">
+            <span class="nav-link-icon text-warning">
+              <i class="fa-solid fa-shield-halved"></i>
+            </span>
+            <span class="nav-link-title fw-semibold text-warning">Django Admin</span>
+          </a>
+        </li>
+        {% endif %}
+
+
         <li class="nav-item mt-auto dh-nav-sidebar-footer">
           <div class="dh-user-card">
-            <a href="{% url 'settings' %}" class="d-flex align-items-center gap-2 text-decoration-none text-agri min-w-0 w-100">
+            <a href="{% url 'settings' %}"
+              class="d-flex align-items-center gap-2 text-decoration-none text-agri min-w-0 w-100">
               <span class="dh-avatar">{{ user.username|first|upper }}</span>
               <span class="min-w-0 flex-grow-1">
                 <span class="dh-user-name">{{ user.username }}</span>

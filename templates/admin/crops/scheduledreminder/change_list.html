@@ -1,0 +1,72 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block content_title %}
+<header class="admin-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div>
+    <div class="admin-page-eyebrow"><i class="fa-solid fa-wheat-awn me-1 text-success"></i>Farm Operations &bull; Task Engine</div>
+    <h1 class="h2 fw-bold admin-heading mb-1">
+      <i class="fa-regular fa-clock text-warning me-2" aria-hidden="true"></i>Scheduled Reminders
+    </h1>
+    <p class="text-muted mb-0 small">
+      Monitor, prioritize, and automate agronomic field activities, crop care cycles, and task dispatch across all farm plots.
+    </p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if has_add_permission %}
+      <a class="btn btn-success d-inline-flex align-items-center gap-2 shadow-sm px-3" href="{% url 'admin:crops_scheduledreminder_add' %}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        <span>Add Scheduled Reminder</span>
+      </a>
+    {% endif %}
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<!-- Aggregated Reminders Metric Grid -->
+<div class="row g-3 mb-4" aria-label="Reminders operational telemetry">
+  <div class="col-6 col-lg-3">
+    <div class="admin-stat-card h-100">
+      <div class="admin-stat-label">Total Reminders</div>
+      <div class="admin-stat-number">{{ total_reminders_count }}</div>
+      <div class="small text-muted">Active field schedules</div>
+      <div class="admin-stat-icon icon-tasks">
+        <i class="fa-regular fa-calendar-check"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="admin-stat-card h-100">
+      <div class="admin-stat-label">Pending Execution</div>
+      <div class="admin-stat-number text-primary">{{ pending_reminders_count }}</div>
+      <div class="small text-muted">Tasks awaiting farmer action</div>
+      <div class="admin-stat-icon icon-users">
+        <i class="fa-regular fa-clock"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="admin-stat-card h-100">
+      <div class="admin-stat-label">Overdue Tasks</div>
+      <div class="admin-stat-number {% if overdue_reminders_count %}text-danger{% else %}text-muted{% endif %}">{{ overdue_reminders_count }}</div>
+      <div class="small text-muted">Past deadline &bull; High priority</div>
+      <div class="admin-stat-icon icon-warn">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="admin-stat-card h-100">
+      <div class="admin-stat-label">Completed &amp; Automated</div>
+      <div class="admin-stat-number text-success">{{ completed_reminders_count }}</div>
+      <div class="small text-muted"><strong class="text-success">{{ automated_reminders_count }}</strong> system-automated</div>
+      <div class="admin-stat-icon icon-leaf">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ block.super }}
+{% endblock %}

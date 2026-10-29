@@ -1,0 +1,267 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'en-us' }}" dir="{{ LANGUAGE_BIDI|yesno:'rtl,ltr,auto' }}"
+  data-admin-theme="light">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>{% block title %}{% endblock %} | SMART AGRIASSIST</title>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var match = document.cookie.match(/(?:^|; )smart_admin_theme=(light|dark)(?:;|$)/);
+      var theme = match ? match[1] : root.getAttribute('data-admin-theme');
+      if (theme !== 'light' && theme !== 'dark') theme = 'light';
+      root.setAttribute('data-bs-theme', theme);
+    })();
+  </script>
+
+  <!-- Core Fonts & Stylesheets -->
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/tabler.css' %}">
+
+  <!-- Django Default Admin CSS Fallbacks & Integrations -->
+  <link rel="stylesheet" href="{% block stylesheet %}{% static 'admin/css/base.css' %}{% endblock %}">
+  {% block extrastyle %}{% endblock %}
+  {% block extrahead %}{% endblock %}
+  {% block responsive %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/app-theme.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin-theme.css' %}">
+  {% block blockbots %}
+  <meta name="robots" content="NONE,NOARCHIVE">{% endblock %}
+</head>
+
+<body class="admin-body {% if is_popup %}popup{% endif %} {% block bodyclass %}{% endblock %}"
+  data-admin-utc-offset="{% now 'Z' %}">
+  <div class="admin-layout">
+    {% if not is_popup %}
+    <!-- Sidebar -->
+    {% block admin_sidebar %}
+    {% if user.is_authenticated and user.is_staff %}
+    {% include "admin/includes/sidebar.html" %}
+    {% endif %}
+    {% endblock %}
+    {% endif %}
+
+    <!-- Main Layout -->
+    <div class="admin-main-wrapper">
+      {% if not is_popup %}
+      <!-- Topbar Navigation -->
+      <header class="admin-topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" id="sidebarToggle"
+            aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="admin-breadcrumbs">
+            <i class="fa-solid fa-house-chimney text-muted" style="font-size: 0.85rem;"></i>
+            {% block breadcrumbs %}
+            <a href="{% url 'admin:index' %}">Admin</a>
+            {% if title %}
+            <span>&rsaquo;</span>
+            <span class="admin-topbar-crumb fw-semibold">{{ title }}</span>
+            {% endif %}
+            {% endblock %}
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <!-- Theme Toggle Button (Light & Dark Mode) -->
+          <button type="button"
+            class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm px-2 py-1"
+            id="adminThemeToggle" title="Toggle Light / Dark Mode">
+            <i class="fa-solid fa-moon theme-icon-dark" aria-hidden="true"></i>
+            <i class="fa-solid fa-sun theme-icon-light d-none" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline small ms-1" id="adminThemeLabel">Theme</span>
+          </button>
+
+          <a href="{% url 'admin_notifications' %}"
+            class="btn btn-sm btn-outline-secondary position-relative" aria-label="Notification Center">
+            <i class="fa-regular fa-bell" aria-hidden="true"></i>
+            <span class="admin-topbar-notification-count admin-notification-count" data-admin-notification-count hidden>0</span>
+          </a>
+
+          <a href="{% url 'dashboard' %}"
+            class="btn btn-sm btn-outline-success d-none d-sm-inline-flex align-items-center gap-1 shadow-sm">
+            <i class="fa-solid fa-seedling"></i>
+            <span>Farm Dashboard</span>
+          </a>
+          <div class="d-flex align-items-center gap-2 ps-1">
+            <div class="admin-user-avatar" style="width: 2rem; height: 2rem; font-size: 0.8rem;">
+              {{ user.username|first|upper }}
+            </div>
+            <span class="d-none d-md-inline admin-user-name-top fw-semibold small">{{ user.first_name|default:user.username }}</span>
+          </div>
+        </div>
+      </header>
+      {% endif %}
+
+      <!-- Main Content Area -->
+      <main class="admin-content-area" id="content-start">
+        <!-- Django System Messages -->
+        {% block messages %}
+        {% if messages %}
+        <ul class="messagelist">
+          {% for message in messages %}
+          <li{% if message.tags %} class="{{ message.tags }}" {% endif %}>
+            <i class="fa-solid fa-circle-check me-2"></i> {{ message|capfirst }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endblock messages %}
+
+        <!-- Content Block -->
+        {% block pretitle %}{% endblock %}
+        {% block content_title %}
+        {% if title and not is_index %}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h1 class="h3 fw-bold admin-page-heading mb-0">{{ title }}</h1>
+          {% block object-tools %}{% endblock %}
+        </div>
+        {% endif %}
+        {% endblock %}
+
+        {% block content %}
+        {% endblock %}
+      </main>
+
+      {% if not is_popup %}
+      <!-- Footer -->
+      <footer class="py-3 px-4 text-center text-muted border-top"
+        style="border-color: var(--agri-border) !important; font-size: 0.78rem;">
+        SMART AGRIASSIST &bull; Intelligent Farm Management Administration &bull; Version 2.0
+      </footer>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="{% static 'js/tabler.js' %}" defer></script>
+  <script>
+    (function () {
+      // Sidebar mobile drawer toggle
+      const toggle = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('adminSidebar');
+      if (toggle && sidebar) {
+        toggle.addEventListener('click', function () {
+          sidebar.classList.toggle('show');
+        });
+      }
+
+      // Admin themes use an Admin-only cookie so they never overwrite Farmer preferences.
+      function applyAdminTheme(theme) {
+        if (theme !== 'light' && theme !== 'dark') return;
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        document.cookie = 'smart_admin_theme=' + theme + '; Path=/admin/; Max-Age=31536000; SameSite=Lax' +
+          (window.location.protocol === 'https:' ? '; Secure' : '');
+        document.dispatchEvent(new CustomEvent('admin-theme-changed', { detail: { theme: theme } }));
+      }
+
+      function syncThemeToggleUI() {
+        const theme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        const moon = document.querySelector('.theme-icon-dark');
+        const sun = document.querySelector('.theme-icon-light');
+        const label = document.getElementById('adminThemeLabel');
+        if (theme === 'dark') {
+          if (moon) moon.classList.add('d-none');
+          if (sun) sun.classList.remove('d-none');
+          if (label) label.textContent = 'Light Mode';
+        } else {
+          if (sun) sun.classList.add('d-none');
+          if (moon) moon.classList.remove('d-none');
+          if (label) label.textContent = 'Dark Mode';
+        }
+      }
+
+      const toggleBtn = document.getElementById('adminThemeToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          const current = document.documentElement.getAttribute('data-bs-theme') || 'light';
+          const target = current === 'dark' ? 'light' : 'dark';
+          applyAdminTheme(target);
+          syncThemeToggleUI();
+        });
+      }
+
+      // Synchronize immediately
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncThemeToggleUI);
+      } else {
+        syncThemeToggleUI();
+      }
+
+      const notificationUrl = "{% url 'admin_notifications_status' %}";
+      let previousNotificationId = null;
+      let previousAlertId = null;
+      let notificationPollingStarted = false;
+
+      function showAdminToast(title, text) {
+        let toast = document.getElementById('adminLiveToast');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'adminLiveToast';
+          toast.className = 'admin-live-toast';
+          toast.setAttribute('role', 'status');
+          toast.setAttribute('aria-live', 'polite');
+          toast.innerHTML = '<div><strong></strong><span></span></div><button type="button" aria-label="Dismiss notification">&times;</button>';
+          document.body.appendChild(toast);
+          toast.querySelector('button').addEventListener('click', function () {
+            toast.remove();
+          });
+        }
+        toast.querySelector('strong').textContent = title;
+        toast.querySelector('span').textContent = text;
+        toast.classList.add('is-visible');
+        window.setTimeout(function () { toast.classList.remove('is-visible'); }, 8000);
+      }
+
+      function updateAdminNotificationStatus() {
+        fetch(notificationUrl, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function (response) {
+            if (!response.ok) throw new Error('Notification status request failed.');
+            return response.json();
+          })
+          .then(function (status) {
+            document.querySelectorAll('[data-admin-notification-count]').forEach(function (badge) {
+              const count = Number(status.unread_notifications) || 0;
+              badge.textContent = count > 99 ? '99+' : String(count);
+              badge.hidden = count < 1;
+              badge.setAttribute('aria-label', count + ' unread notifications');
+            });
+            document.querySelectorAll('[data-admin-active-alert-count]').forEach(function (node) {
+              node.textContent = String(status.active_alerts || 0);
+            });
+            document.querySelectorAll('[data-admin-critical-alert-count]').forEach(function (node) {
+              node.textContent = String(status.critical_alerts || 0);
+            });
+            if (notificationPollingStarted && status.latest_notification_id &&
+                status.latest_notification_id !== previousNotificationId) {
+              showAdminToast('New notification', status.latest_notification_title || 'Open the Notification Center to review it.');
+            }
+            if (notificationPollingStarted && status.latest_alert_id &&
+                status.latest_alert_id !== previousAlertId) {
+              showAdminToast('New weather alert', status.latest_alert_title || 'Open Weather & Alerts to review it.');
+            }
+            previousNotificationId = status.latest_notification_id;
+            previousAlertId = status.latest_alert_id;
+            notificationPollingStarted = true;
+          })
+          .catch(function (error) {
+            console.error('Unable to refresh Admin notification status.', error);
+          });
+      }
+
+      updateAdminNotificationStatus();
+      window.setInterval(updateAdminNotificationStatus, 60000);
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

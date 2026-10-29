@@ -1,0 +1,290 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}AI Assistant Configuration | SMART AGRIASSIST Admin{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'admin:index' %}">Admin</a>
+<span>&rsaquo;</span>
+<span class="admin-topbar-crumb fw-semibold">AI Assistant Configuration</span>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+  <!-- Page Header -->
+  <header class="admin-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+    <div>
+      <div class="admin-page-eyebrow">Intelligent Agronomy</div>
+      <h1 class="h2 fw-bold admin-heading mb-1">AI Assistant Configuration &amp; Telemetry</h1>
+      <p class="text-muted mb-0">Monitor Google Gemini model connections, inspect crop disease diagnoses, and audit farmer conversational telemetry.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'admin_ai_assistant' %}?refresh=1" class="btn btn-outline-success d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Test Connection</span>
+      </a>
+      <a href="{% url 'admin:core_cropdiagnosis_changelist' %}" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-stethoscope"></i>
+        <span>All Diagnoses</span>
+      </a>
+      <a href="{% url 'admin:core_conversation_changelist' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+        <i class="fa-solid fa-comments"></i>
+        <span>Chat Logs</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Service Health & Model Telemetry Card -->
+  <section class="admin-card mb-4" aria-labelledby="aiStatusTitle">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+      <h2 id="aiStatusTitle" class="admin-card-title mb-0">
+        <i class="fa-solid fa-server text-success me-2" aria-hidden="true"></i>Core Service Health &amp; Model Integration
+      </h2>
+      {% if is_configured and status_result.available %}
+      <span class="badge bg-success d-inline-flex align-items-center gap-1 px-2 py-1">
+        <i class="fa-solid fa-circle-check"></i> Connected &bull; Online
+      </span>
+      {% elif is_configured %}
+      <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1 px-2 py-1">
+        <i class="fa-solid fa-triangle-exclamation"></i> Service Degraded
+      </span>
+      {% else %}
+      <span class="badge bg-danger d-inline-flex align-items-center gap-1 px-2 py-1">
+        <i class="fa-solid fa-circle-xmark"></i> API Key Missing
+      </span>
+      {% endif %}
+    </div>
+
+    <div class="admin-card-body">
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Active Vision/LLM Model</div>
+          <div class="fw-bold fs-5 text-success">{{ active_model }}</div>
+          <div class="small text-muted">Google GenAI multimodal engine</div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Gemini API Key Status</div>
+          <div class="fw-semibold">
+            {% if is_configured %}
+            <span class="font-monospace text-body">{{ masked_key }}</span>
+            <span class="badge bg-success-lt ms-1">Active</span>
+            {% else %}
+            <span class="text-danger font-monospace">Not configured</span>
+            {% endif %}
+          </div>
+          <div class="small text-muted">Protected in environment variables</div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Response Latency / Telemetry</div>
+          <div class="fw-semibold">
+            {% if status_result.latency_ms %}
+            <span class="text-success fw-bold">{{ status_result.latency_ms }} ms</span>
+            {% else %}
+            <span class="text-muted">&lt; 150 ms benchmark</span>
+            {% endif %}
+          </div>
+          <div class="small text-muted">Direct Google Cloud endpoint</div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="text-muted small">Timeouts &amp; Fault Tolerance</div>
+          <div class="fw-semibold">
+            {{ request_timeout }}s timeout &bull; {{ max_retries }} retries
+          </div>
+          <div class="small text-muted">Connect window: {{ connect_timeout }}s</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metric Statistics Cards -->
+  <div class="row g-3 mb-4" aria-label="AI operational metrics">
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Total AI Diagnoses</div>
+        <div class="admin-stat-number text-primary">{{ total_diagnoses }}</div>
+        <div class="small text-muted"><strong>{{ confirmed_diagnoses }}</strong> validated by agronomists</div>
+        <div class="admin-stat-icon icon-brain">
+          <i class="fa-solid fa-stethoscope"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Farmer AI Sessions</div>
+        <div class="admin-stat-number text-success">{{ total_conversations }}</div>
+        <div class="small text-muted">Multi-turn advisory sessions</div>
+        <div class="admin-stat-icon icon-users">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Total Analyzed Messages</div>
+        <div class="admin-stat-number">{{ total_messages }}</div>
+        <div class="small text-muted">Agronomic questions &amp; images</div>
+        <div class="admin-stat-icon icon-tasks">
+          <i class="fa-solid fa-message"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="admin-stat-card">
+        <div class="admin-stat-label">Pending Confirmation</div>
+        <div class="admin-stat-number text-warning">{{ pending_diagnoses }}</div>
+        <div class="small text-muted">Awaiting on-site confirmation</div>
+        <div class="admin-stat-icon icon-leaf">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left: Recent AI Disease Diagnoses -->
+    <div class="col-12 col-xl-7">
+      <section class="admin-card mb-4" aria-labelledby="recentDiagnosesTitle">
+        <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <h2 id="recentDiagnosesTitle" class="admin-card-title mb-0">
+            <i class="fa-solid fa-stethoscope text-primary me-2" aria-hidden="true"></i>Recent AI Disease &amp; Pest Diagnoses
+          </h2>
+          <a href="{% url 'admin:core_cropdiagnosis_changelist' %}"
+            class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+            View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </div>
+
+        {% if recent_diagnoses %}
+        <div class="admin-diagnosis-list">
+          {% for diag in recent_diagnoses %}
+          <article class="admin-diagnosis-record">
+            <div class="admin-diagnosis-image">
+              {% if diag.image %}
+              <img src="{{ diag.image.url }}" alt="Analyzed {{ diag.crop_name|default:'crop' }} specimen" loading="lazy">
+              {% else %}
+              <i class="fa-solid fa-leaf" aria-hidden="true"></i>
+              {% endif %}
+            </div>
+
+            <div class="admin-diagnosis-details">
+              <div class="admin-diagnosis-topline">
+                <div class="admin-diagnosis-heading">
+                  <span class="admin-diagnosis-crop">{{ diag.crop_name|default:"Field crop" }}</span>
+                  <span class="admin-diagnosis-separator" aria-hidden="true">&bull;</span>
+                  <h3>{{ diag.possible_disease|default:"No diagnosis recorded" }}</h3>
+                </div>
+                {% if diag.is_confirmed %}
+                <span class="badge bg-success-lt"><i class="fa-solid fa-circle-check me-1" aria-hidden="true"></i>Confirmed</span>
+                {% else %}
+                <span class="badge bg-warning-lt"><i class="fa-solid fa-hourglass-half me-1" aria-hidden="true"></i>Needs review</span>
+                {% endif %}
+              </div>
+
+              {% if diag.observed_symptoms %}
+              <p class="admin-diagnosis-symptoms">{{ diag.observed_symptoms|truncatechars:150 }}</p>
+              {% endif %}
+
+              <div class="admin-diagnosis-meta">
+                <span class="admin-diagnosis-confidence confidence-{{ diag.confidence_level|lower|slugify }}">
+                  <i class="fa-solid fa-bullseye" aria-hidden="true"></i>
+                  {{ diag.confidence_level|default:"Unrated" }} confidence
+                  <span>({{ diag.confidence_score|floatformat:2 }})</span>
+                </span>
+                {% if diag.user %}
+                <a href="{% url 'admin_user_portfolio' diag.user.pk %}" class="admin-diagnosis-farmer">
+                  <i class="fa-solid fa-user" aria-hidden="true"></i>
+                  {{ diag.user.get_full_name|default:diag.user.username }}
+                </a>
+                {% endif %}
+                <span class="admin-diagnosis-date">
+                  <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                  {{ diag.created_at|date:"M j, Y" }}
+                </span>
+              </div>
+            </div>
+
+            <a href="{% url 'admin:core_cropdiagnosis_change' diag.pk %}"
+              class="btn btn-sm btn-outline-secondary admin-diagnosis-action">
+              Inspect <i class="fa-solid fa-arrow-up-right-from-square ms-1" aria-hidden="true"></i>
+            </a>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="admin-empty-state text-center p-4">
+          <i class="fa-solid fa-stethoscope text-muted mb-2" style="font-size: 2rem; opacity: 0.4;"></i>
+          <p class="text-muted small mb-0">No crop diagnoses recorded yet.</p>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <!-- Right: Architecture, Parameters, and Recent Conversations -->
+    <div class="col-12 col-xl-5">
+
+      <!-- Architectural Parameters -->
+      <section class="admin-card mb-4" aria-labelledby="aiParamsTitle">
+        <div class="admin-card-header">
+          <h2 id="aiParamsTitle" class="admin-card-title mb-0">
+            <i class="fa-solid fa-sliders text-success me-2" aria-hidden="true"></i>Agronomic Intelligence Architecture
+          </h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="list-group list-group-flush mb-0">
+            <div class="list-group-item px-0 py-2 border-bottom" style="background: transparent;">
+              <div class="fw-semibold small">Contextual Grounding</div>
+              <div class="text-muted small">Dynamic injection of farm location, local weather conditions, planted crop guidelines, and user preferences.</div>
+            </div>
+            <div class="list-group-item px-0 py-2 border-bottom" style="background: transparent;">
+              <div class="fw-semibold small">Vision Safety &amp; Guardrails</div>
+              <div class="text-muted small">Max image upload size 10MB; supported MIME types JPEG, PNG, WebP; strict agricultural safety prompt instructions.</div>
+            </div>
+            <div class="list-group-item px-0 py-2" style="background: transparent;">
+              <div class="fw-semibold small">Advisory Disclaimer</div>
+              <div class="text-muted small">All AI diagnoses are non-binding suggestions accompanied by advice to consult certified municipal agricultural technicians.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Conversations -->
+      <section class="admin-card mb-4" aria-labelledby="recentConvsTitle">
+        <div class="admin-card-header d-flex justify-content-between align-items-center">
+          <h2 id="recentConvsTitle" class="admin-card-title mb-0">
+            <i class="fa-solid fa-comments text-success me-2" aria-hidden="true"></i>Recent Chat Sessions
+          </h2>
+          <a href="{% url 'admin:core_conversation_changelist' %}" class="btn btn-sm btn-outline-secondary">
+            View All &rarr;
+          </a>
+        </div>
+        <div class="admin-card-body">
+          {% if recent_conversations %}
+          <div class="list-group list-group-flush mb-0">
+            {% for conv in recent_conversations %}
+            <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center" style="background: transparent;">
+              <div>
+                <a href="{% url 'admin_user_portfolio' conv.owner.pk %}" class="text-body fw-semibold small text-decoration-none">
+                  {{ conv.owner.get_full_name|default:conv.owner.username }}
+                </a>
+                <div class="small text-muted">{{ conv.message_count }} message{{ conv.message_count|pluralize }} &bull; Started {{ conv.started_at|date:"M j, Y" }}</div>
+              </div>
+              <a href="{% url 'admin:core_conversation_change' conv.pk %}" class="btn btn-sm btn-link text-success p-0" style="font-size: 11px;">
+                Inspect &rarr;
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">No active AI chat conversations on record.</p>
+          {% endif %}
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -96,7 +96,7 @@
       <div class="list-group list-group-flush" id="notificationList" aria-live="polite" aria-busy="true"></div>
       <div class="text-center p-5 d-none" id="notificationEmpty">
         <i class="fa-solid fa-bell-slash fa-3x text-muted mb-3" aria-hidden="true"></i>
-        <p class="empty-title mb-1" id="notificationEmptyTitle">No notifications</p>
+        <p class="empty-title mb-1" id="notificationEmptyTitle">No notifications yet.</p>
         <p class="empty-subtitle text-muted mb-0" id="notificationEmptyMessage">Notifications from your farm will appear here.</p>
       </div>
     </div>
@@ -131,11 +131,7 @@
   function updateUnreadCount(count) {
     var countNode = document.querySelector('#unreadCount span');
     if (countNode) countNode.textContent = count;
-    var badge = document.querySelector('[data-notification-unread]');
-    if (badge) {
-      badge.textContent = count;
-      badge.classList.toggle('d-none', count === 0);
-    }
+    window.updateNotificationUnreadCount(count);
   }
 
   function updateFilterButtons() {
@@ -224,6 +220,11 @@
       categoryBadge.className = 'badge bg-secondary-lt text-secondary flex-shrink-0';
       categoryBadge.textContent = item.category_label;
       heading.appendChild(categoryBadge);
+      var statusBadge = document.createElement('span');
+      statusBadge.className = 'badge flex-shrink-0 ' +
+        (item.read ? 'bg-secondary-lt text-secondary' : 'bg-success-lt text-success');
+      statusBadge.textContent = item.read ? 'Read' : 'Unread';
+      heading.appendChild(statusBadge);
       content.appendChild(heading);
 
       var message = document.createElement('p');
@@ -263,7 +264,7 @@
     list.classList.toggle('d-none', isEmpty);
     if (isEmpty) {
       document.getElementById('notificationEmptyTitle').textContent =
-        totalCount === 0 ? 'No notifications' : 'No matching notifications';
+        totalCount === 0 ? 'No notifications yet.' : 'No matching notifications';
       document.getElementById('notificationEmptyMessage').textContent =
         totalCount === 0
           ? 'Notifications from your farm will appear here.'

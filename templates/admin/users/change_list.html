@@ -1,0 +1,39 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+<header class="admin-page-header admin-user-management-header">
+  <div>
+    <div class="admin-page-eyebrow">Accounts and access</div>
+    <h1 class="admin-page-heading">User Management</h1>
+    <p class="text-muted mb-0">Inspect farmer portfolios, manage account privileges, monitor field activities, and track crop lifecycles.</p>
+  </div>
+  {% if has_add_permission %}
+    <a class="btn btn-success d-inline-flex align-items-center gap-2 shadow-sm" href="{{ add_url }}">
+      <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+      <span>Add New User</span>
+    </a>
+  {% endif %}
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="admin-summary-grid admin-user-summary mb-3" aria-label="Account summary">
+  <article class="admin-summary-card">
+    <span class="admin-summary-label">Total registered users</span>
+    <strong>{{ total_registered_users }}</strong>
+  </article>
+  <article class="admin-summary-card">
+    <span class="admin-summary-label">Active users</span>
+    <strong class="text-success">{{ active_registered_users }}</strong>
+  </article>
+  <article class="admin-summary-card">
+    <span class="admin-summary-label">Inactive users</span>
+    <strong class="text-muted">{{ inactive_registered_users }}</strong>
+  </article>
+  <article class="admin-summary-card">
+    <span class="admin-summary-label">Associated farm crops</span>
+    <strong class="text-success">{{ total_crops|default:"0" }}</strong>
+  </article>
+</div>
+{{ block.super }}
+{% endblock %}
