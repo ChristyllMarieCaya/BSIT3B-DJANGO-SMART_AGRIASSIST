@@ -13,7 +13,7 @@ monitoring, computer-vision crop disease diagnosis, and role-based
 administration to boost productivity and climate resilience among
 Filipino smallholder farmers and agricultural workers.
 
-*Project Overview & Framework*
+## *Project Overview & Framework*
 - Project Title: Development of Smart AgriAssist: An Intelligent
   Philippine Farm Management and AI-Powered Decision-Support System
 - Domain: Smart Agriculture, Web Development, AI-Driven Decision
@@ -29,7 +29,7 @@ Tech Stack
 - APIs & AI: Open-Meteo Weather API, Gemini AI Models
   (Conversational & Computer Vision)
   
-*Objectives*
+## *Objectives*
 Designed to address manual farm inefficiencies and streamline
 agricultural workflows, the project encompasses the following specific
 technical goals:
@@ -54,7 +54,7 @@ technical goals:
   customizable alerts via in-app notifications, browser push alerts,
   and email warnings for weather risks and crop care reminders.
   
-*Core System Modules*
+## *Core System Modules*
 The platform is organized into a comprehensive suite of integrated
 modules:
 
@@ -77,7 +77,7 @@ modules:
   - Automated tracking of field activities and multi-channel
     broadcast of severe weather hazard alerts.
     
-*Alignment with SDGs*
+## *Alignment with SDGs*
 - SDG 2 (Zero Hunger)
   - Promotes resilient farming practices, optimized crop yields, and
     structured pest/disease management in the Philippines.
@@ -88,7 +88,7 @@ modules:
   - Strengthens farmer adaptation against extreme tropical weather
     events through automated flood, heavy rain, and storm warnings.
     
-*Scope & Development Limitations*
+## *Scope & Development Limitations*
 - Administrative Privileges
   - Backend configurations and user database management are
     restricted exclusively to authorized System Administrators and
