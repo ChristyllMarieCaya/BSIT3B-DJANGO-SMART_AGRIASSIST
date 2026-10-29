@@ -1,0 +1,5 @@
+# Smart AgriAssist
+
+- CAYA, CHRISTYLL MARIE L.
+- BULAHAN, MAILEN 
+- ADRIAS, IRISH ANN 
