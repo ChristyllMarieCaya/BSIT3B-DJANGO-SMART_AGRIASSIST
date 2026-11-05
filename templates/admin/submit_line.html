@@ -1,0 +1,36 @@
+{% load i18n admin_urls %}
+<div class="submit-row admin-modern-submit-row d-flex flex-wrap align-items-center justify-content-between gap-3">
+{% block submit-row %}
+  <div class="submit-row-left d-flex align-items-center gap-2">
+    {% if not is_popup %}
+      {% url opts|admin_urlname:'changelist' as changelist_url %}
+      <a href="{% if changelist_url %}{% add_preserved_filters changelist_url %}{% else %}javascript:history.back(){% endif %}"
+         class="admin-cancel-link" title="Cancel and return to list">
+        <i class="fa-solid fa-arrow-left me-1"></i> Cancel
+      </a>
+    {% endif %}
+    {% if show_delete_link and original %}
+      {% url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
+      <a href="{% add_preserved_filters delete_url %}" class="deletelink btn btn-sm btn-outline-danger ms-2">{% translate "Delete" %}</a>
+    {% endif %}
+  </div>
+
+  <div class="submit-row-right d-flex flex-wrap align-items-center gap-2">
+    {% if show_save_as_new %}
+      <input type="submit" value="{% translate 'Save as new' %}" name="_saveasnew" class="btn btn-sm btn-outline-secondary">
+    {% endif %}
+    {% if show_save_and_add_another %}
+      <input type="submit" value="{% translate 'Save and add another' %}" name="_addanother" class="btn btn-sm btn-outline-secondary">
+    {% endif %}
+    {% if show_save_and_continue %}
+      <input type="submit" value="{% if can_change %}{% translate 'Save and continue editing' %}{% else %}{% translate 'Save and view' %}{% endif %}" name="_continue" class="btn btn-sm btn-outline-secondary">
+    {% endif %}
+    {% if show_save %}
+      <button type="submit" class="default admin-pill-action-btn" name="_save">
+        <i class="fa-solid fa-check me-1"></i> {% translate 'Save' %}
+      </button>
+    {% endif %}
+  </div>
+{% endblock %}
+</div>
+

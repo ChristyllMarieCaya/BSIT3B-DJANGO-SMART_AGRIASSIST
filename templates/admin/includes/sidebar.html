@@ -1,139 +1,450 @@
 {% load static i18n %}
+<style>
+  /* =========================================================
+     SMART AGRIASSIST - Collapsible Accordion Sidebar (Admin)
+     ========================================================= */
+  .admin-sidebar {
+    width: 260px !important;
+    min-width: 260px !important;
+    height: 100vh !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    z-index: 1020 !important;
+    background-color: var(--agri-sidebar-bg) !important;
+    border-right: 1px solid var(--agri-border) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .admin-sidebar-header {
+    padding: 1rem 1.15rem !important;
+    border-bottom: 1px solid var(--agri-border) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-brand {
+    padding: 0 !important;
+    border-bottom: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    min-width: 0 !important;
+  }
+
+  .admin-hamburger-btn {
+    background: var(--agri-card-secondary, rgba(0, 0, 0, 0.04)) !important;
+    border: 1px solid var(--agri-border) !important;
+    border-radius: 0.45rem !important;
+    color: var(--agri-text-muted) !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    font-size: 0.9rem !important;
+    flex-shrink: 0 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .admin-hamburger-btn:hover {
+    background: var(--agri-accent-subtle) !important;
+    color: var(--agri-accent) !important;
+    border-color: var(--agri-accent) !important;
+  }
+
+  /* Accordion Categories */
+  .admin-accordion-category {
+    margin: 0.2rem 0.65rem 0.35rem !important;
+  }
+
+  .admin-category-btn {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.6rem 0.75rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0.55rem !important;
+    color: var(--agri-text-muted) !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    transition: background 0.18s ease, color 0.18s ease !important;
+  }
+
+  .admin-category-btn:hover {
+    background-color: var(--agri-accent-subtle) !important;
+    color: var(--agri-accent) !important;
+  }
+
+  .admin-cat-icon {
+    width: 1.4rem !important;
+    text-align: center !important;
+    font-size: 1rem !important;
+    margin-right: 0.65rem !important;
+    color: var(--agri-text-muted) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-category-btn:hover .admin-cat-icon {
+    color: var(--agri-accent) !important;
+  }
+
+  .admin-cat-title {
+    flex-grow: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .admin-cat-arrow {
+    font-size: 0.72rem !important;
+    color: var(--agri-text-dim) !important;
+    margin-left: 0.5rem !important;
+    flex-shrink: 0 !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .admin-accordion-category.is-expanded > .admin-category-btn .admin-cat-arrow {
+    transform: rotate(180deg) !important;
+    color: var(--agri-accent) !important;
+  }
+
+  /* Submenu slide-down */
+  .admin-category-sublist {
+    max-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    padding-left: 0.75rem !important;
+    transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease !important;
+  }
+
+  .admin-accordion-category.is-expanded > .admin-category-sublist {
+    max-height: 400px !important;
+    opacity: 1 !important;
+    padding-top: 0.2rem !important;
+    padding-bottom: 0.3rem !important;
+  }
+
+  .admin-sublink {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.45rem 0.75rem !important;
+    margin: 0.1rem 0 !important;
+    border-radius: 0.5rem !important;
+    font-size: 0.8rem !important;
+    color: var(--agri-text-muted) !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .admin-sublink:hover {
+    background: var(--agri-accent-subtle) !important;
+    color: var(--agri-accent) !important;
+  }
+
+  .admin-sublink.is-current {
+    background: var(--agri-accent-subtle) !important;
+    color: var(--agri-accent) !important;
+    font-weight: 700 !important;
+    box-shadow: inset 3px 0 0 var(--agri-accent) !important;
+  }
+
+  .admin-sublink-icon {
+    width: 1.25rem !important;
+    font-size: 0.85rem !important;
+    margin-right: 0.6rem !important;
+    color: var(--agri-text-dim) !important;
+  }
+
+  .admin-sublink.is-current .admin-sublink-icon,
+  .admin-sublink:hover .admin-sublink-icon {
+    color: var(--agri-accent) !important;
+  }
+
+  /* Desktop Collapsed (<aside> shrinks to 72px) */
+  @media (min-width: 992px) {
+    html.admin-sidebar-collapsed .admin-sidebar,
+    body.admin-sidebar-collapsed .admin-sidebar,
+    .admin-sidebar-collapsed .admin-sidebar {
+      width: 72px !important;
+      min-width: 72px !important;
+      overflow-x: hidden !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-sidebar-header,
+    body.admin-sidebar-collapsed .admin-sidebar-header,
+    .admin-sidebar-collapsed .admin-sidebar-header {
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding: 0.85rem 0.35rem !important;
+      gap: 0.5rem !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-brand-text,
+    body.admin-sidebar-collapsed .admin-brand-text,
+    .admin-sidebar-collapsed .admin-brand-text {
+      display: none !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-hamburger-btn,
+    body.admin-sidebar-collapsed .admin-hamburger-btn,
+    .admin-sidebar-collapsed .admin-hamburger-btn {
+      margin: 0 auto !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-accordion-category,
+    body.admin-sidebar-collapsed .admin-accordion-category,
+    .admin-sidebar-collapsed .admin-accordion-category {
+      margin: 0.2rem 0.35rem !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-category-btn,
+    body.admin-sidebar-collapsed .admin-category-btn,
+    .admin-sidebar-collapsed .admin-category-btn {
+      justify-content: center !important;
+      padding: 0.75rem 0 !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-cat-icon,
+    body.admin-sidebar-collapsed .admin-cat-icon,
+    .admin-sidebar-collapsed .admin-cat-icon {
+      margin-right: 0 !important;
+      font-size: 1.15rem !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-cat-title,
+    html.admin-sidebar-collapsed .admin-cat-arrow,
+    body.admin-sidebar-collapsed .admin-cat-title,
+    body.admin-sidebar-collapsed .admin-cat-arrow,
+    .admin-sidebar-collapsed .admin-cat-title,
+    .admin-sidebar-collapsed .admin-cat-arrow {
+      display: none !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-category-sublist,
+    body.admin-sidebar-collapsed .admin-category-sublist,
+    .admin-sidebar-collapsed .admin-category-sublist {
+      display: none !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-user-info,
+    html.admin-sidebar-collapsed .admin-logout-btn,
+    body.admin-sidebar-collapsed .admin-user-info,
+    body.admin-sidebar-collapsed .admin-logout-btn,
+    .admin-sidebar-collapsed .admin-user-info,
+    .admin-sidebar-collapsed .admin-logout-btn {
+      display: none !important;
+    }
+
+    html.admin-sidebar-collapsed .admin-user-pill,
+    body.admin-sidebar-collapsed .admin-user-pill,
+    .admin-sidebar-collapsed .admin-user-pill {
+      justify-content: center !important;
+      padding: 0.5rem 0 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+    }
+  }
+
+  /* Mobile Drawer */
+  @media (max-width: 991.98px) {
+    .admin-sidebar {
+      position: fixed !important;
+      top: 0 !important;
+      left: -280px !important;
+      width: 280px !important;
+      min-width: 280px !important;
+      box-shadow: var(--agri-card-shadow) !important;
+      z-index: 1060 !important;
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .admin-sidebar.show-drawer {
+      left: 0 !important;
+    }
+
+    .admin-sidebar-backdrop {
+      display: block !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(0, 0, 0, 0.5) !important;
+      backdrop-filter: blur(3px) !important;
+      z-index: 1050 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      transition: opacity 0.25s ease, visibility 0.25s ease !important;
+    }
+
+    .admin-sidebar-backdrop.show {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+  }
+</style>
+
+<div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
+
 <aside class="admin-sidebar" id="adminSidebar">
-  <!-- Brand Header -->
-  <a href="{% url 'admin:index' %}" class="admin-brand">
-    <div class="admin-brand-icon">
-      <i class="fa-solid fa-seedling"></i>
-    </div>
-    <div>
-      <div class="admin-brand-title">SMART <span>AGRIASSIST</span></div>
-      <div class="admin-brand-subtitle">Farm Administration</div>
-    </div>
-  </a>
-
-  <!-- Navigation items -->
-  <div class="py-2">
-    <!-- Administration -->
-    <div class="admin-nav-section">Administration</div>
-    <div class="admin-nav-item">
-      <a href="{% url 'admin:index' %}" class="admin-nav-link {% if request.path == '/admin/' %}active{% endif %}">
-        <i class="fa-solid fa-chart-pie"></i>
-        <span>Admin Dashboard</span>
-      </a>
-    </div>
-    {% if perms.auth.view_user or user.is_superuser %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin:auth_user_changelist' %}"
-        class="admin-nav-link {% if '/auth/user/' in request.path or '/admin/users/' in request.path %}active{% endif %}">
-        <i class="fa-solid fa-users-gear"></i>
-        <span>User Management</span>
-      </a>
-    </div>
-    {% endif %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin_notifications' %}"
-        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_notifications' %}active{% endif %}">
-        <i class="fa-regular fa-bell"></i>
-        <span>Notification Center</span>
-        <span class="admin-nav-badge admin-notification-count" data-admin-notification-count hidden>0</span>
-      </a>
-    </div>
-    <!-- Farm Management -->
-    <div class="admin-nav-section">Farm Management</div>
-    {% if perms.crops.view_crop or user.is_superuser %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin:crops_crop_changelist' %}"
-        class="admin-nav-link {% if '/crops/crop/' in request.path and '/crops/cropgrowthstage/' not in request.path %}active{% endif %}">
-        <i class="fa-solid fa-wheat-awn"></i>
-        <span>Crops</span>
-        {% if total_crops %}
-        <span class="admin-nav-badge">{{ total_crops }}</span>
-        {% endif %}
-      </a>
-    </div>
-    {% endif %}
-    {% if perms.crops.view_cropgrowthstage or user.is_superuser %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin:crops_cropgrowthstage_changelist' %}"
-        class="admin-nav-link {% if '/crops/cropgrowthstage/' in request.path %}active{% endif %}">
-        <i class="fa-solid fa-timeline"></i>
-        <span>Crop Growth Tracking</span>
-      </a>
-    </div>
-    {% endif %}
-    {% if perms.catalog.view_cropcatalog or user.is_superuser %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin:catalog_cropcatalog_changelist' %}"
-        class="admin-nav-link {% if '/catalog/cropcatalog/' in request.path %}active{% endif %}">
-        <i class="fa-solid fa-book-bookmark"></i>
-        <span>Crop Catalog</span>
-      </a>
-    </div>
-    {% endif %}
-    {% if perms.crops.view_scheduledreminder or user.is_superuser %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin:crops_scheduledreminder_changelist' %}"
-        class="admin-nav-link {% if '/crops/scheduledreminder/' in request.path %}active{% endif %}">
-        <i class="fa-regular fa-clock"></i>
-        <span>Scheduled Reminders</span>
-        {% if pending_reminders %}
-        <span class="admin-nav-badge">{{ pending_reminders }}</span>
-        {% endif %}
-      </a>
-    </div>
-    {% endif %}
-
-    <!-- AI Assistant -->
-    <div class="admin-nav-section">AI Assistant</div>
-    <div class="admin-nav-item">
-      <a href="{% url 'admin_ai_assistant' %}"
-        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_ai_assistant' or '/info/userpreference/' in request.path or '/core/conversation/' in request.path or '/core/cropdiagnosis/' in request.path %}active{% endif %}">
-        <i class="fa-solid fa-robot"></i>
-        <span>AI Assistant Configuration</span>
-      </a>
-    </div>
-
-    <!-- Weather & Alerts -->
-    <div class="admin-nav-section">Weather &amp; Alerts</div>
-    {% if perms.info.view_weatheralert or perms.info.view_weatherrecord or user.is_superuser %}
-    <div class="admin-nav-item">
-      <a href="{% url 'admin_weather' %}"
-        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_weather' or '/info/weatheralert/' in request.path or '/info/weatherrecord/' in request.path %}active{% endif %}">
-        <i class="fa-solid fa-cloud-bolt"></i>
-        <span>Weather &amp; Alerts</span>
-        {% if active_weather_count %}
-        <span class="admin-nav-badge" style="background: rgba(239,68,68,0.25); color: #fca5a5;">{{ active_weather_count }}</span>
-        {% endif %}
-      </a>
-    </div>
-    {% endif %}
-
-    <!-- System Settings -->
-    <div class="admin-nav-section">System Settings</div>
-    <div class="admin-nav-item">
-      <a href="{% url 'admin_settings' %}"
-        class="admin-nav-link {% if request.resolver_match.url_name == 'admin_settings' %}active{% endif %}">
-        <i class="fa-solid fa-sliders"></i>
-        <span>Settings</span>
-      </a>
-    </div>
+  <!-- Sidebar Header: Brand & Hamburger Button -->
+  <div class="admin-sidebar-header d-flex align-items-center justify-content-between">
+    <a href="{% url 'admin:index' %}" class="admin-brand text-decoration-none min-w-0" title="SMART AGRIASSIST Administration">
+      <div class="admin-brand-icon flex-shrink-0">
+        <i class="fa-solid fa-seedling"></i>
+      </div>
+      <div class="admin-brand-text">
+        <div class="admin-brand-title">SMART <span>AGRIASSIST</span></div>
+        <div class="admin-brand-subtitle">Farm Administration</div>
+      </div>
+    </a>
+    <button class="admin-hamburger-btn d-inline-flex align-items-center justify-content-center" id="adminSidebarHamburgerBtn"
+      type="button" aria-label="Toggle navigation" title="Toggle sidebar">
+      <i class="fa-solid fa-bars"></i>
+    </button>
   </div>
 
-  <!-- Footer Admin Profile & Logout -->
+  <!-- Sidebar Accordion Navigation -->
+  <div class="admin-sidebar-scrollable flex-grow-1">
+    <nav class="admin-accordion" id="adminAccordion">
+
+      <!-- Category 1: Administration -->
+      <div class="admin-accordion-category {% if '/auth/user/' in request.path or '/admin/users/' in request.path or request.resolver_match.url_name == 'admin_notifications' or request.path == '/admin/' %}is-active is-expanded{% endif %}">
+        <button class="admin-category-btn" type="button" data-category="admin-mgmt" title="Administration">
+          <span class="admin-cat-icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="admin-cat-title">Administration</span>
+          <span class="admin-cat-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="admin-category-sublist">
+          <a href="{% url 'admin:index' %}" class="admin-sublink {% if request.path == '/admin/' %}is-current{% endif %}" title="Admin Dashboard">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-chart-pie"></i></span>
+            <span class="admin-sublink-text">Admin Dashboard</span>
+          </a>
+          {% if perms.auth.view_user or user.is_superuser %}
+          <a href="{% url 'admin:auth_user_changelist' %}" class="admin-sublink {% if '/auth/user/' in request.path or '/admin/users/' in request.path %}is-current{% endif %}" title="User Management">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-users-gear"></i></span>
+            <span class="admin-sublink-text">User Management</span>
+          </a>
+          {% endif %}
+          <a href="{% url 'admin_notifications' %}" class="admin-sublink {% if request.resolver_match.url_name == 'admin_notifications' %}is-current{% endif %}" title="Notification Center">
+            <span class="admin-sublink-icon"><i class="fa-regular fa-bell"></i></span>
+            <span class="admin-sublink-text">Notification Center</span>
+            <span class="admin-nav-badge admin-notification-count ms-auto" data-admin-notification-count hidden>0</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Category 2: Farm Management -->
+      <div class="admin-accordion-category {% if '/crops/' in request.path or '/catalog/' in request.path %}is-active is-expanded{% endif %}">
+        <button class="admin-category-btn" type="button" data-category="farm-mgmt" title="Farm Management">
+          <span class="admin-cat-icon"><i class="fa-solid fa-wheat-awn"></i></span>
+          <span class="admin-cat-title">Farm Management</span>
+          <span class="admin-cat-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="admin-category-sublist">
+          {% if perms.crops.view_crop or user.is_superuser %}
+          <a href="{% url 'admin:crops_crop_changelist' %}" class="admin-sublink {% if '/crops/crop/' in request.path and '/crops/cropgrowthstage/' not in request.path %}is-current{% endif %}" title="Crops">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-wheat-awn"></i></span>
+            <span class="admin-sublink-text">Crops</span>
+            {% if total_crops %}
+            <span class="admin-nav-badge ms-auto">{{ total_crops }}</span>
+            {% endif %}
+          </a>
+          {% endif %}
+          {% if perms.crops.view_cropgrowthstage or user.is_superuser %}
+          <a href="{% url 'admin:crops_cropgrowthstage_changelist' %}" class="admin-sublink {% if '/crops/cropgrowthstage/' in request.path %}is-current{% endif %}" title="Crop Growth Tracking">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-timeline"></i></span>
+            <span class="admin-sublink-text">Growth Tracking</span>
+          </a>
+          {% endif %}
+          {% if perms.catalog.view_cropcatalog or user.is_superuser %}
+          <a href="{% url 'admin:catalog_cropcatalog_changelist' %}" class="admin-sublink {% if '/catalog/cropcatalog/' in request.path %}is-current{% endif %}" title="Crop Catalog">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-book-bookmark"></i></span>
+            <span class="admin-sublink-text">Crop Catalog</span>
+          </a>
+          {% endif %}
+          {% if perms.crops.view_scheduledreminder or user.is_superuser %}
+          <a href="{% url 'admin:crops_scheduledreminder_changelist' %}" class="admin-sublink {% if '/crops/scheduledreminder/' in request.path %}is-current{% endif %}" title="Scheduled Reminders">
+            <span class="admin-sublink-icon"><i class="fa-regular fa-clock"></i></span>
+            <span class="admin-sublink-text">Reminders</span>
+            {% if pending_reminders %}
+            <span class="admin-nav-badge ms-auto">{{ pending_reminders }}</span>
+            {% endif %}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Category 3: AI & Alerts -->
+      <div class="admin-accordion-category {% if request.resolver_match.url_name in 'admin_ai_assistant,admin_weather' or '/info/' in request.path or '/core/' in request.path %}is-active is-expanded{% endif %}">
+        <button class="admin-category-btn" type="button" data-category="ai-alerts" title="AI & Alerts">
+          <span class="admin-cat-icon"><i class="fa-solid fa-brain"></i></span>
+          <span class="admin-cat-title">AI &amp; Alerts</span>
+          <span class="admin-cat-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="admin-category-sublist">
+          <a href="{% url 'admin_ai_assistant' %}" class="admin-sublink {% if request.resolver_match.url_name == 'admin_ai_assistant' or '/info/userpreference/' in request.path or '/core/conversation/' in request.path or '/core/cropdiagnosis/' in request.path %}is-current{% endif %}" title="AI Assistant Configuration">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-robot"></i></span>
+            <span class="admin-sublink-text">AI Configuration</span>
+          </a>
+          {% if perms.info.view_weatheralert or perms.info.view_weatherrecord or user.is_superuser %}
+          <a href="{% url 'admin_weather' %}" class="admin-sublink {% if request.resolver_match.url_name == 'admin_weather' or '/info/weatheralert/' in request.path or '/info/weatherrecord/' in request.path %}is-current{% endif %}" title="Weather & Alerts">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-cloud-bolt"></i></span>
+            <span class="admin-sublink-text">Weather &amp; Alerts</span>
+            {% if active_weather_count %}
+            <span class="admin-nav-badge ms-auto" style="background: rgba(239,68,68,0.25); color: #fca5a5;">{{ active_weather_count }}</span>
+            {% endif %}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Category 4: System Settings -->
+      <div class="admin-accordion-category {% if request.resolver_match.url_name == 'admin_settings' %}is-active is-expanded{% endif %}">
+        <button class="admin-category-btn" type="button" data-category="system" title="System Settings">
+          <span class="admin-cat-icon"><i class="fa-solid fa-sliders"></i></span>
+          <span class="admin-cat-title">System Settings</span>
+          <span class="admin-cat-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="admin-category-sublist">
+          <a href="{% url 'admin_settings' %}" class="admin-sublink {% if request.resolver_match.url_name == 'admin_settings' %}is-current{% endif %}" title="Settings">
+            <span class="admin-sublink-icon"><i class="fa-solid fa-gear"></i></span>
+            <span class="admin-sublink-text">Settings</span>
+          </a>
+        </div>
+      </div>
+
+    </nav>
+  </div>
+
+  <!-- Admin User Footer -->
   <div class="admin-sidebar-footer">
-    <div class="admin-user-pill">
+    <div class="admin-user-pill" title="Administrator: {{ user.username }}">
       <div class="admin-user-avatar">
         {{ user.username|first|upper }}
       </div>
-      <div class="admin-user-info">
-        <div class="admin-user-name">{{ user.first_name|default:user.username }}</div>
+      <div class="admin-user-info min-w-0">
+        <div class="admin-user-name text-truncate">{{ user.first_name|default:user.username }}</div>
         <div class="admin-user-role">Administrator</div>
       </div>
       <form method="post" action="{% url 'admin:logout' %}" style="display: inline; margin: 0;">
         {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-link text-muted p-1" title="Sign out"
-          style="border: none; background: transparent; cursor: pointer;">
-          <i class="fa-solid fa-arrow-right-from-bracket" style="font-size: 1rem;"></i>
+        <button type="submit" class="admin-logout-btn" title="Sign out">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
         </button>
       </form>
     </div>

@@ -1,5 +1,10 @@
 (function () {
   const root = document.documentElement;
+  try {
+    if (window.localStorage.getItem('smart_user_sidebar_collapsed') === 'true') {
+      root.classList.add('sidebar-collapsed');
+    }
+  } catch (e) {}
   const allowedThemes = ['light', 'dark', 'system'];
   const authenticated = root.dataset.themeAuthenticated === 'true';
   const accountTheme = root.dataset.themePreference || 'light';

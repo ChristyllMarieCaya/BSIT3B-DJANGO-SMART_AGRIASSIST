@@ -16,6 +16,12 @@
       var theme = match ? match[1] : root.getAttribute('data-admin-theme');
       if (theme !== 'light' && theme !== 'dark') theme = 'light';
       root.setAttribute('data-bs-theme', theme);
+
+      try {
+        if (window.localStorage.getItem('smart_admin_sidebar_collapsed') === 'true') {
+          root.classList.add('admin-sidebar-collapsed');
+        }
+      } catch (e) { }
     })();
   </script>
 
@@ -79,10 +85,11 @@
             <span class="d-none d-sm-inline small ms-1" id="adminThemeLabel">Theme</span>
           </button>
 
-          <a href="{% url 'admin_notifications' %}"
-            class="btn btn-sm btn-outline-secondary position-relative" aria-label="Notification Center">
+          <a href="{% url 'admin_notifications' %}" class="btn btn-sm btn-outline-secondary position-relative"
+            aria-label="Notification Center">
             <i class="fa-regular fa-bell" aria-hidden="true"></i>
-            <span class="admin-topbar-notification-count admin-notification-count" data-admin-notification-count hidden>0</span>
+            <span class="admin-topbar-notification-count admin-notification-count" data-admin-notification-count
+              hidden>0</span>
           </a>
 
           <a href="{% url 'dashboard' %}"
@@ -144,13 +151,118 @@
   <script src="{% static 'js/tabler.js' %}" defer></script>
   <script>
     (function () {
-      // Sidebar mobile drawer toggle
-      const toggle = document.getElementById('sidebarToggle');
-      const sidebar = document.getElementById('adminSidebar');
-      if (toggle && sidebar) {
-        toggle.addEventListener('click', function () {
-          sidebar.classList.toggle('show');
+      function initAdminModernSidebar() {
+        const sidebar = document.getElementById('adminSidebar');
+        const hamburger = document.getElementById('adminSidebarHamburgerBtn');
+        const topbarToggle = document.getElementById('sidebarToggle');
+        const backdrop = document.getElementById('adminSidebarBackdrop');
+        const root = document.documentElement;
+        if (!sidebar) return;
+
+        const categories = sidebar.querySelectorAll('.admin-accordion-category, .admin-category');
+
+        function setDesktopCollapsed(collapsed) {
+          root.classList.toggle('admin-sidebar-collapsed', collapsed);
+          if (document.body) document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
+          try {
+            localStorage.setItem('smart_admin_sidebar_collapsed', String(collapsed));
+          } catch (e) { }
+        }
+
+        function toggleMobileDrawer(open) {
+          const isShowing = typeof open === 'boolean' ? open : !sidebar.classList.contains('show-drawer');
+          sidebar.classList.toggle('show-drawer', isShowing);
+          if (backdrop) backdrop.classList.toggle('show', isShowing);
+        }
+
+        // Hamburger Menu Toggle in Sidebar Header
+        if (hamburger) {
+          hamburger.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.innerWidth < 992) {
+              toggleMobileDrawer();
+            } else {
+              const isCurrentlyCollapsed = root.classList.contains('admin-sidebar-collapsed');
+              setDesktopCollapsed(!isCurrentlyCollapsed);
+            }
+          });
+        }
+
+        // Mobile topbar toggle button
+        if (topbarToggle) {
+          topbarToggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileDrawer();
+          });
+        }
+
+        // Accordion Category Rows & Auto-Expand on Click
+        categories.forEach(function (cat) {
+          const catBtn = cat.querySelector('.admin-category-btn');
+          if (!catBtn) return;
+
+          catBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isCollapsed = root.classList.contains('admin-sidebar-collapsed');
+
+            // Auto-Expand Sidebar on Click if in collapsed/icon-only state
+            if (isCollapsed) {
+              setDesktopCollapsed(false);
+              // Expand clicked category
+              cat.classList.add('is-expanded');
+              // Accordion: collapse others
+              categories.forEach(function (other) {
+                if (other !== cat) other.classList.remove('is-expanded');
+              });
+              return;
+            }
+
+            // Normal Accordion toggle when open
+            const wasExpanded = cat.classList.contains('is-expanded');
+
+            // Accordion: collapse others
+            categories.forEach(function (other) {
+              other.classList.remove('is-expanded');
+            });
+
+            // Toggle this category
+            if (!wasExpanded) {
+              cat.classList.add('is-expanded');
+            }
+          });
         });
+
+        // Mobile backdrop click to close
+        if (backdrop) {
+          backdrop.addEventListener('click', function () {
+            toggleMobileDrawer(false);
+          });
+        }
+
+        // Window resize listener
+        window.addEventListener('resize', function () {
+          if (window.innerWidth >= 992) {
+            toggleMobileDrawer(false);
+          }
+        });
+
+        // Restore initial state from localStorage
+        try {
+          const isSavedCollapsed = localStorage.getItem('smart_admin_sidebar_collapsed') === 'true';
+          if (window.innerWidth >= 992 && isSavedCollapsed) {
+            setDesktopCollapsed(true);
+          }
+        } catch (e) { }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAdminModernSidebar);
+      } else {
+        initAdminModernSidebar();
       }
 
       // Admin themes use an Admin-only cookie so they never overwrite Farmer preferences.
@@ -241,11 +353,11 @@
               node.textContent = String(status.critical_alerts || 0);
             });
             if (notificationPollingStarted && status.latest_notification_id &&
-                status.latest_notification_id !== previousNotificationId) {
+              status.latest_notification_id !== previousNotificationId) {
               showAdminToast('New notification', status.latest_notification_title || 'Open the Notification Center to review it.');
             }
             if (notificationPollingStarted && status.latest_alert_id &&
-                status.latest_alert_id !== previousAlertId) {
+              status.latest_alert_id !== previousAlertId) {
               showAdminToast('New weather alert', status.latest_alert_title || 'Open Weather & Alerts to review it.');
             }
             previousNotificationId = status.latest_notification_id;

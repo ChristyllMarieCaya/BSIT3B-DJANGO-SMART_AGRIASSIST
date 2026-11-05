@@ -1,155 +1,695 @@
-<aside class="navbar navbar-vertical navbar-expand-lg dh-sidebar">
-  <div class="container-fluid">
-    <div class="navbar-brand dh-brand">
-      <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none">
-        <span class="dh-brand-mark">
-          <i class="fa-solid fa-seedling"></i>
-        </span>
-        <span class="lh-1">
-          <span class="dh-brand-name">SMART <span class="text-agri">AGRIASSIST</span></span>
-          <span class="dh-brand-sub">Intelligent Farm System</span>
-        </span>
-      </a>
-    </div>
+{% load static i18n %}
+<style>
+  /* =========================================================
+     SMART AGRIASSIST - Collapsible Accordion Sidebar (User)
+     ========================================================= */
+  .dh-sidebar {
+    width: 260px !important;
+    min-width: 260px !important;
+    height: 100vh !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    z-index: 1030 !important;
+    background: #ffffff !important;
+    border-right: 1px solid var(--tblr-border-color, #e5e7eb) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu"
-      aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
+  [data-bs-theme="dark"] .dh-sidebar {
+    background: #0f1812 !important;
+    border-right-color: #1e2e23 !important;
+  }
+
+  .page-wrapper {
+    margin-left: 260px !important;
+    transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  /* Header & Brand */
+  .dh-sidebar-header {
+    padding: 1rem 1.15rem !important;
+    border-bottom: 1px solid var(--tblr-border-color, #e5e7eb) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  [data-bs-theme="dark"] .dh-sidebar-header {
+    border-bottom-color: #1e2e23 !important;
+  }
+
+  .dh-brand-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    text-decoration: none !important;
+    min-width: 0 !important;
+  }
+
+  .dh-brand-mark {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    border-radius: 0.55rem !important;
+    background: rgba(21, 128, 61, 0.1) !important;
+    color: #15803d !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.1rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  [data-bs-theme="dark"] .dh-brand-mark {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #4ade80 !important;
+  }
+
+  .dh-brand-name {
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: -0.01em !important;
+    color: #111827 !important;
+    white-space: nowrap !important;
+  }
+
+  [data-bs-theme="dark"] .dh-brand-name {
+    color: #e5ede7 !important;
+  }
+
+  .dh-brand-name .text-agri {
+    color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .dh-brand-name .text-agri {
+    color: #4ade80 !important;
+  }
+
+  .dh-brand-sub {
+    font-size: 0.68rem !important;
+    color: #6b7280 !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
+  }
+
+  [data-bs-theme="dark"] .dh-brand-sub {
+    color: #94a399 !important;
+  }
+
+  /* Hamburger Toggle Button */
+  .dh-hamburger-btn {
+    background: #f3f4f6 !important;
+    border: 1px solid var(--tblr-border-color, #e5e7eb) !important;
+    border-radius: 0.45rem !important;
+    color: #4b5563 !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    font-size: 0.9rem !important;
+    flex-shrink: 0 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .dh-hamburger-btn:hover {
+    background: #ecfdf3 !important;
+    color: #15803d !important;
+    border-color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .dh-hamburger-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a399 !important;
+  }
+
+  [data-bs-theme="dark"] .dh-hamburger-btn:hover {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #4ade80 !important;
+    border-color: #4ade80 !important;
+  }
+
+  /* Accordion Categories */
+  .accordion-category {
+    margin: 0.25rem 0.65rem 0.4rem !important;
+    list-style: none !important;
+  }
+
+  .accordion-header-btn {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.6rem 0.75rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0.55rem !important;
+    color: #4b5563 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    transition: background 0.18s ease, color 0.18s ease !important;
+  }
+
+  [data-bs-theme="dark"] .accordion-header-btn {
+    color: #94a399 !important;
+  }
+
+  .accordion-header-btn:hover {
+    background-color: #f0fdf4 !important;
+    color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .accordion-header-btn:hover {
+    background-color: rgba(34, 197, 94, 0.12) !important;
+    color: #4ade80 !important;
+  }
+
+  .accordion-category.is-expanded>.accordion-header-btn {
+    color: #15803d !important;
+    background-color: #f7fee7 !important;
+  }
+
+  [data-bs-theme="dark"] .accordion-category.is-expanded>.accordion-header-btn {
+    color: #4ade80 !important;
+    background-color: rgba(34, 197, 94, 0.15) !important;
+  }
+
+  .nav-link-icon {
+    width: 1.4rem !important;
+    text-align: center !important;
+    font-size: 1rem !important;
+    margin-right: 0.65rem !important;
+    color: #6b7280 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .accordion-header-btn:hover .nav-link-icon,
+  .accordion-category.is-expanded>.accordion-header-btn .nav-link-icon {
+    color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .accordion-header-btn:hover .nav-link-icon,
+  [data-bs-theme="dark"] .accordion-category.is-expanded>.accordion-header-btn .nav-link-icon {
+    color: #4ade80 !important;
+  }
+
+  .nav-link-title {
+    flex-grow: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .accordion-chevron {
+    font-size: 0.72rem !important;
+    color: #9ca3af !important;
+    margin-left: 0.5rem !important;
+    flex-shrink: 0 !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .accordion-category.is-expanded>.accordion-header-btn .accordion-chevron {
+    transform: rotate(180deg) !important;
+    color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .accordion-category.is-expanded>.accordion-header-btn .accordion-chevron {
+    color: #4ade80 !important;
+  }
+
+  /* Accordion Sublist (Slide down) */
+  .accordion-sublist {
+    max-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    padding-left: 0.75rem !important;
+    transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease !important;
+  }
+
+  .accordion-category.is-expanded>.accordion-sublist {
+    max-height: 400px !important;
+    opacity: 1 !important;
+    padding-top: 0.2rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .sub-link {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.45rem 0.75rem !important;
+    margin: 0.1rem 0 !important;
+    border-radius: 0.5rem !important;
+    font-size: 0.8rem !important;
+    color: #4b5563 !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease !important;
+  }
+
+  [data-bs-theme="dark"] .sub-link {
+    color: #94a399 !important;
+  }
+
+  .sub-link:hover {
+    background: #f0fdf4 !important;
+    color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .sub-link:hover {
+    background: rgba(34, 197, 94, 0.12) !important;
+    color: #4ade80 !important;
+  }
+
+  .sub-link.active {
+    background: #ecfdf3 !important;
+    color: #15803d !important;
+    font-weight: 700 !important;
+    box-shadow: inset 3px 0 0 #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .sub-link.active {
+    background: rgba(34, 197, 94, 0.18) !important;
+    color: #4ade80 !important;
+    box-shadow: inset 3px 0 0 #4ade80 !important;
+  }
+
+  .sub-link .nav-link-icon {
+    width: 1.25rem !important;
+    font-size: 0.85rem !important;
+    margin-right: 0.6rem !important;
+    color: #6b7280 !important;
+  }
+
+  .sub-link.active .nav-link-icon,
+  .sub-link:hover .nav-link-icon {
+    color: #15803d !important;
+  }
+
+  [data-bs-theme="dark"] .sub-link.active .nav-link-icon,
+  [data-bs-theme="dark"] .sub-link:hover .nav-link-icon {
+    color: #4ade80 !important;
+  }
+
+  /* User Footer Pill */
+  .dh-sidebar-footer {
+    padding: 0.6rem 0.75rem 0.85rem !important;
+    border-top: 1px solid var(--tblr-border-color, #e5e7eb) !important;
+    margin-top: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  [data-bs-theme="dark"] .dh-sidebar-footer {
+    border-top-color: #1e2e23 !important;
+  }
+
+  .dh-user-card {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    padding: 0.6rem 0.75rem !important;
+    border-radius: 0.65rem !important;
+    background: #f8fafc !important;
+    border: 1px solid var(--tblr-border-color, #e5e7eb) !important;
+  }
+
+  [data-bs-theme="dark"] .dh-user-card {
+    background: #142018 !important;
+    border-color: #1e2e23 !important;
+  }
+
+  .dh-avatar {
+    width: 2.1rem !important;
+    height: 2.1rem !important;
+    border-radius: 50% !important;
+    background: #ecfdf3 !important;
+    color: #15803d !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  [data-bs-theme="dark"] .dh-avatar {
+    background: rgba(34, 197, 94, 0.2) !important;
+    color: #4ade80 !important;
+  }
+
+  .dh-user-details {
+    min-width: 0 !important;
+    flex-grow: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .dh-user-name {
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: #1f2937 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  [data-bs-theme="dark"] .dh-user-name {
+    color: #e5ede7 !important;
+  }
+
+  .dh-user-role {
+    font-size: 0.7rem !important;
+    color: #6b7280 !important;
+    display: block !important;
+  }
+
+  [data-bs-theme="dark"] .dh-user-role {
+    color: #94a399 !important;
+  }
+
+  .dh-user-logout {
+    background: transparent !important;
+    border: none !important;
+    color: #9ca3af !important;
+    padding: 0.35rem !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    transition: color 0.15s ease !important;
+  }
+
+  .dh-user-logout:hover {
+    color: #dc2626 !important;
+  }
+
+  /* =========================================================
+     Desktop Collapsed State (<aside> shrinks to 72px)
+     ========================================================= */
+  @media (min-width: 992px) {
+
+    html.sidebar-collapsed .dh-sidebar,
+    body.sidebar-collapsed .dh-sidebar,
+    .sidebar-collapsed .dh-sidebar {
+      width: 72px !important;
+      min-width: 72px !important;
+      overflow-x: hidden !important;
+    }
+
+    html.sidebar-collapsed .page-wrapper,
+    body.sidebar-collapsed .page-wrapper,
+    .sidebar-collapsed .page-wrapper {
+      margin-left: 72px !important;
+    }
+
+    html.sidebar-collapsed .dh-sidebar-header,
+    body.sidebar-collapsed .dh-sidebar-header,
+    .sidebar-collapsed .dh-sidebar-header {
+      flex-direction: column !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding: 0.85rem 0.35rem !important;
+      gap: 0.5rem !important;
+    }
+
+    html.sidebar-collapsed .dh-brand-text,
+    body.sidebar-collapsed .dh-brand-text,
+    .sidebar-collapsed .dh-brand-text {
+      display: none !important;
+    }
+
+    html.sidebar-collapsed .dh-hamburger-btn,
+    body.sidebar-collapsed .dh-hamburger-btn,
+    .sidebar-collapsed .dh-hamburger-btn {
+      margin: 0 auto !important;
+    }
+
+    html.sidebar-collapsed .accordion-category,
+    body.sidebar-collapsed .accordion-category,
+    .sidebar-collapsed .accordion-category {
+      margin: 0.2rem 0.35rem !important;
+    }
+
+    html.sidebar-collapsed .accordion-header-btn,
+    body.sidebar-collapsed .accordion-header-btn,
+    .sidebar-collapsed .accordion-header-btn {
+      justify-content: center !important;
+      padding: 0.75rem 0 !important;
+    }
+
+    html.sidebar-collapsed .nav-link-icon,
+    body.sidebar-collapsed .nav-link-icon,
+    .sidebar-collapsed .nav-link-icon {
+      margin-right: 0 !important;
+      font-size: 1.15rem !important;
+    }
+
+    html.sidebar-collapsed .nav-link-title,
+    html.sidebar-collapsed .accordion-chevron,
+    html.sidebar-collapsed .accordion-category>.accordion-header-btn .badge,
+    body.sidebar-collapsed .nav-link-title,
+    body.sidebar-collapsed .accordion-chevron,
+    body.sidebar-collapsed .accordion-category>.accordion-header-btn .badge,
+    .sidebar-collapsed .nav-link-title,
+    .sidebar-collapsed .accordion-chevron,
+    .sidebar-collapsed .accordion-category>.accordion-header-btn .badge {
+      display: none !important;
+    }
+
+    html.sidebar-collapsed .accordion-sublist,
+    body.sidebar-collapsed .accordion-sublist,
+    .sidebar-collapsed .accordion-sublist {
+      display: none !important;
+      max-height: 0 !important;
+    }
+
+    html.sidebar-collapsed .dh-user-details,
+    html.sidebar-collapsed .dh-user-logout,
+    body.sidebar-collapsed .dh-user-details,
+    body.sidebar-collapsed .dh-user-logout,
+    .sidebar-collapsed .dh-user-details,
+    .sidebar-collapsed .dh-user-logout {
+      display: none !important;
+    }
+
+    html.sidebar-collapsed .dh-user-card,
+    body.sidebar-collapsed .dh-user-card,
+    .sidebar-collapsed .dh-user-card {
+      justify-content: center !important;
+      padding: 0.5rem 0 !important;
+      background: transparent !important;
+      border-color: transparent !important;
+    }
+
+    html.sidebar-collapsed .dh-avatar,
+    body.sidebar-collapsed .dh-avatar,
+    .sidebar-collapsed .dh-avatar {
+      margin: 0 auto !important;
+    }
+  }
+
+  /* =========================================================
+     Mobile Responsive Overlay Drawer (< 992px)
+     ========================================================= */
+  @media (max-width: 991.98px) {
+    .page-wrapper {
+      margin-left: 0 !important;
+    }
+
+    .dh-sidebar {
+      position: fixed !important;
+      top: 0 !important;
+      left: -280px !important;
+      width: 280px !important;
+      min-width: 280px !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+      z-index: 1060 !important;
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .dh-sidebar.show-drawer {
+      left: 0 !important;
+    }
+
+    .sidebar-backdrop {
+      display: block !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(15, 23, 42, 0.45) !important;
+      backdrop-filter: blur(3px) !important;
+      z-index: 1050 !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      transition: opacity 0.25s ease, visibility 0.25s ease !important;
+    }
+
+    .sidebar-backdrop.show {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+  }
+</style>
+
+<div class="sidebar-backdrop" id="userSidebarBackdrop"></div>
+
+<aside class="dh-sidebar" id="appSidebar">
+  <!-- Header: Brand & Hamburger Button -->
+  <div class="dh-sidebar-header">
+    <a href="{% url 'dashboard' %}" class="dh-brand-link" title="SMART AGRIASSIST">
+      <span class="dh-brand-mark flex-shrink-0">
+        <i class="fa-solid fa-seedling"></i>
+      </span>
+      <span class="dh-brand-text">
+        <span class="dh-brand-name d-block">SMART <span class="text-agri">AGRIASSIST</span></span>
+        <span class="dh-brand-sub d-block">Intelligent Farm System</span>
+      </span>
+    </a>
+    <button class="dh-hamburger-btn" id="userSidebarHamburgerBtn" type="button" aria-label="Toggle navigation"
+      title="Toggle sidebar">
+      <i class="fa-solid fa-bars"></i>
     </button>
+  </div>
 
-    <div class="collapse navbar-collapse" id="sidebar-menu">
-      <ul class="navbar-nav pt-lg-2 py-lg-2">
+  <!-- Sidebar Accordion Navigation -->
+  <div class="dh-sidebar-scrollable flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+    <ul class="navbar-nav pt-2 mb-0" style="list-style: none; padding-left: 0;">
 
-        <li class="nav-item">
-          <span class="dh-nav-section">Assistant &amp; Overview</span>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+      <!-- Category 1: Assistant & Overview -->
+      <li
+        class="nav-item accordion-category {% if request.resolver_match.url_name in 'dashboard,ai_assistant,home' %}is-expanded{% endif %}">
+        <button class="accordion-header-btn" type="button" title="Assistant & Overview">
+          <span class="nav-link-icon text-success"><i class="fa-solid fa-compass"></i></span>
+          <span class="nav-link-title">Assistant &amp; Overview</span>
+          <span class="accordion-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="accordion-sublist">
+          <a class="nav-link sub-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'home' %}active{% endif %}"
             href="{% url 'dashboard' %}">
-            <span class="nav-link-icon">
-              <i class="fa-solid fa-gauge"></i>
-            </span>
+            <span class="nav-link-icon"><i class="fa-solid fa-gauge"></i></span>
             <span class="nav-link-title">Dashboard</span>
           </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}"
+          <a class="nav-link sub-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}"
             href="{% url 'ai_assistant' %}">
-            <span class="nav-link-icon text-success">
-              <i class="fa-solid fa-robot"></i>
-            </span>
+            <span class="nav-link-icon text-success"><i class="fa-solid fa-robot"></i></span>
             <span class="nav-link-title fw-bold text-success">Agri AI Assistant</span>
           </a>
-        </li>
+        </div>
+      </li>
 
-        <li class="nav-item">
-          <span class="dh-nav-section">Field &amp; Crop Management</span>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.app_name == 'crops' %}active{% endif %}"
+      <!-- Category 2: Field & Crop Management -->
+      <li
+        class="nav-item accordion-category {% if request.resolver_match.app_name == 'crops' or request.resolver_match.url_name in 'diagnoses_list,diagnosis_detail,weather' or request.resolver_match.app_name == 'catalog' %}is-expanded{% endif %}">
+        <button class="accordion-header-btn" type="button" title="Field & Crop Management">
+          <span class="nav-link-icon"><i class="fa-solid fa-wheat-awn"></i></span>
+          <span class="nav-link-title">Field &amp; Crop</span>
+          <span class="accordion-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="accordion-sublist">
+          <a class="nav-link sub-link {% if request.resolver_match.app_name == 'crops' %}active{% endif %}"
             href="{% url 'crops:crop_tracker' %}">
-            <span class="nav-link-icon">
-              <i class="fa-solid fa-chart-line"></i>
-            </span>
+            <span class="nav-link-icon"><i class="fa-solid fa-chart-line"></i></span>
             <span class="nav-link-title">Crop Growth Tracking</span>
           </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'diagnoses_list' or request.resolver_match.url_name == 'diagnosis_detail' %}active{% endif %}"
+          <a class="nav-link sub-link {% if request.resolver_match.url_name == 'diagnoses_list' or request.resolver_match.url_name == 'diagnosis_detail' %}active{% endif %}"
             href="{% url 'diagnoses_list' %}">
-            <span class="nav-link-icon">
-              <i class="fa-solid fa-notes-medical"></i>
-            </span>
+            <span class="nav-link-icon"><i class="fa-solid fa-notes-medical"></i></span>
             <span class="nav-link-title">Crop Diagnoses</span>
           </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'weather' %}active{% endif %}"
+          <a class="nav-link sub-link {% if request.resolver_match.url_name == 'weather' %}active{% endif %}"
             href="{% url 'weather' %}">
-            <span class="nav-link-icon">
-              <i class="fa-solid fa-cloud-sun"></i>
-            </span>
+            <span class="nav-link-icon"><i class="fa-solid fa-cloud-sun"></i></span>
             <span class="nav-link-title">Weather &amp; Alerts</span>
           </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.app_name == 'catalog' %}active{% endif %}"
+          <a class="nav-link sub-link {% if request.resolver_match.app_name == 'catalog' %}active{% endif %}"
             href="{% url 'catalog:catalog_list' %}">
-            <span class="nav-link-icon">
-              <i class="fa-solid fa-book-open"></i>
-            </span>
+            <span class="nav-link-icon"><i class="fa-solid fa-book-open"></i></span>
             <span class="nav-link-title">Crop Catalog</span>
           </a>
-        </li>
+        </div>
+      </li>
 
-        <li class="nav-item">
-          <span class="dh-nav-section">Account &amp; System</span>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}"
+      <!-- Category 3: Account & System -->
+      <li
+        class="nav-item accordion-category {% if request.resolver_match.url_name in 'notifications,settings' %}is-expanded{% endif %}">
+        <button class="accordion-header-btn" type="button" title="Account & System">
+          <span class="nav-link-icon"><i class="fa-solid fa-user-gear"></i></span>
+          <span class="nav-link-title">Account &amp; System</span>
+          {% if unread_count > 0 %}
+          <span class="badge bg-danger ms-auto me-2">{{ unread_count }}</span>
+          {% endif %}
+          <span class="accordion-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="accordion-sublist">
+          <a class="nav-link sub-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}"
             href="{% url 'notifications' %}">
             <span class="nav-link-icon">
               <i class="fa-solid fa-bell{% if unread_count > 0 %}-ring text-danger{% endif %}"
                 data-notification-icon></i>
             </span>
             <span class="nav-link-title">Notifications</span>
-            <span class="badge bg-danger ms-2{% if unread_count == 0 %} d-none{% endif %}"
-              data-notification-unread data-count-url="{% url 'notifications_api' %}"
-              aria-label="{{ unread_count }} unread notifications">{% if unread_count > 99 %}99+{% else %}{{ unread_count }}{% endif %}</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"
-            href="{% url 'settings' %}">
-            <span class="nav-link-icon">
-              <i class="fa-solid fa-gear"></i>
+            <span class="badge bg-danger ms-auto{% if unread_count == 0 %} d-none{% endif %}" data-notification-unread
+              data-count-url="{% url 'notifications_api' %}" aria-label="{{ unread_count }} unread notifications">
+              {% if unread_count > 99 %}99+{% else %}{{ unread_count }}{% endif %}
             </span>
+          </a>
+          <a class="nav-link sub-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}"
+            href="{% url 'settings' %}">
+            <span class="nav-link-icon"><i class="fa-solid fa-gear"></i></span>
             <span class="nav-link-title">Settings</span>
           </a>
-        </li>
+        </div>
+      </li>
 
-        {% if user.is_staff or user.is_superuser %}
-        <li class="nav-item">
-          <span class="dh-nav-section">Administration</span>
-        </li>
-        <li class="nav-item mb-1">
-          <a class="nav-link" href="{% url 'admin:index' %}">
-            <span class="nav-link-icon text-warning">
-              <i class="fa-solid fa-shield-halved"></i>
-            </span>
-            <span class="nav-link-title fw-semibold text-warning">Django Admin</span>
+      {% if user.is_staff or user.is_superuser %}
+      <!-- Category 4: Administration (Only for staff / superuser) -->
+      <li class="nav-item accordion-category">
+        <button class="accordion-header-btn" type="button" title="Administration">
+          <span class="nav-link-icon text-warning"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="nav-link-title text-warning fw-semibold">Administration</span>
+          <span class="accordion-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+        <div class="accordion-sublist">
+          <a class="nav-link sub-link text-warning" href="{% url 'admin:index' %}">
+            <span class="nav-link-icon text-warning"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+            <span class="nav-link-title fw-semibold">Django Admin Panel</span>
           </a>
-        </li>
-        {% endif %}
+        </div>
+      </li>
+      {% endif %}
 
+    </ul>
+  </div>
 
-        <li class="nav-item mt-auto dh-nav-sidebar-footer">
-          <div class="dh-user-card">
-            <a href="{% url 'settings' %}"
-              class="d-flex align-items-center gap-2 text-decoration-none text-agri min-w-0 w-100">
-              <span class="dh-avatar">{{ user.username|first|upper }}</span>
-              <span class="min-w-0 flex-grow-1">
-                <span class="dh-user-name">{{ user.username }}</span>
-                <span class="dh-user-role">
-                  {% if user.is_superuser %}Administrator{% else %}Farm User{% endif %}
-                </span>
-              </span>
-            </a>
-            <a href="{% url 'logout' %}" class="dh-user-logout" title="Logout">
-              <i class="fa-solid fa-arrow-right-from-bracket"></i>
-            </a>
-          </div>
-        </li>
-
-      </ul>
+  <!-- User Footer Pill -->
+  <div class="dh-sidebar-footer">
+    <div class="dh-user-card" title="Account: {{ user.username }}">
+      <a href="{% url 'settings' %}" class="d-flex align-items-center gap-2 text-decoration-none min-w-0 flex-grow-1"
+        title="Settings ({{ user.username }})">
+        <span class="dh-avatar">{{ user.username|first|upper }}</span>
+        <span class="dh-user-details">
+          <span class="dh-user-name">{{ user.first_name|default:user.username }}</span>
+          <span class="dh-user-role">
+            {% if user.is_superuser %}Administrator{% elif user.is_staff %}Staff Member{% else %}Farm User{% endif %}
+          </span>
+        </span>
+      </a>
+      <a href="{% url 'logout' %}" class="dh-user-logout" title="Sign out">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </a>
     </div>
   </div>
 </aside>

@@ -348,8 +348,7 @@ Admin{% endblock %}
             <h2 id="remindersTitle" class="admin-card-title mb-0">
               <i class="fa-regular fa-clock text-warning me-2" aria-hidden="true"></i>Scheduled Farm Care Reminders
             </h2>
-            <span class="text-muted small">{{ pending_reminders_count }} pending activity task{{
-              pending_reminders_count|pluralize }}</span>
+            <span class="text-muted small">{{ pending_reminders_count }} pending activity task{{ pending_reminders_count|pluralize }}</span>
           </div>
           <a href="{% url 'admin:crops_scheduledreminder_changelist' %}?user__id__exact={{ target_user.pk }}"
             class="btn btn-sm btn-outline-secondary">
@@ -437,8 +436,7 @@ Admin{% endblock %}
             <h2 id="aiDiagnosisTitle" class="admin-card-title mb-0">
               <i class="fa-solid fa-stethoscope text-primary me-2" aria-hidden="true"></i>AI Crop Health Diagnoses
             </h2>
-            <span class="text-muted small">{{ total_diagnoses_count }} diagnosis record{{
-              total_diagnoses_count|pluralize }} generated</span>
+            <span class="text-muted small">{{ total_diagnoses_count }} diagnosis record{{ total_diagnoses_count|pluralize }} generated</span>
           </div>
           <a href="{% url 'admin:core_cropdiagnosis_changelist' %}?user__id__exact={{ target_user.pk }}"
             class="btn btn-sm btn-outline-secondary">
@@ -454,8 +452,7 @@ Admin{% endblock %}
               <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 mb-2">
                 <div>
                   <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold text-body">{{ diag.crop_name|default:"Crop Specimen" }} &mdash; {{
-                      diag.possible_disease }}</span>
+                    <span class="fw-bold text-body">{{ diag.crop_name|default:"Crop Specimen" }} &mdash; {{ diag.possible_disease }}</span>
                     {% if diag.is_confirmed %}
                     <span class="badge bg-success-lt"><i class="fa-solid fa-certificate me-1"></i>Confirmed by
                       Tech</span>
@@ -524,17 +521,13 @@ Admin{% endblock %}
                 <div>
                   <div class="d-flex align-items-center gap-2 mb-1">
                     {% if alert.severity == 'critical' %}
-                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{
-                      alert.get_severity_display }}</span>
+                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ alert.get_severity_display }}</span>
                     {% elif alert.severity == 'warning' %}
-                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-exclamation me-1"></i>{{
-                      alert.get_severity_display }}</span>
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-exclamation me-1"></i>{{ alert.get_severity_display }}</span>
                     {% elif alert.severity == 'watch' %}
-                    <span class="badge bg-orange-lt"><i class="fa-solid fa-eye me-1"></i>{{ alert.get_severity_display
-                      }}</span>
+                    <span class="badge bg-orange-lt"><i class="fa-solid fa-eye me-1"></i>{{ alert.get_severity_display }}</span>
                     {% elif alert.severity == 'advisory' %}
-                    <span class="badge bg-info-lt"><i class="fa-solid fa-info-circle me-1"></i>{{
-                      alert.get_severity_display }}</span>
+                    <span class="badge bg-info-lt"><i class="fa-solid fa-info-circle me-1"></i>{{ alert.get_severity_display }}</span>
                     {% else %}
                     <span class="badge bg-secondary-lt">{{ alert.get_severity_display }}</span>
                     {% endif %}
@@ -603,17 +596,13 @@ Admin{% endblock %}
                 <div>
                   <div class="d-flex align-items-center gap-2 mb-1">
                     {% if alert.severity == 'critical' %}
-                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{
-                      alert.get_severity_display }}</span>
+                    <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>{{ alert.get_severity_display }}</span>
                     {% elif alert.severity == 'warning' %}
-                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-exclamation me-1"></i>{{
-                      alert.get_severity_display }}</span>
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-exclamation me-1"></i>{{ alert.get_severity_display }}</span>
                     {% elif alert.severity == 'watch' %}
-                    <span class="badge bg-orange-lt"><i class="fa-solid fa-eye me-1"></i>{{ alert.get_severity_display
-                      }}</span>
+                    <span class="badge bg-orange-lt"><i class="fa-solid fa-eye me-1"></i>{{ alert.get_severity_display }}</span>
                     {% elif alert.severity == 'advisory' %}
-                    <span class="badge bg-info-lt"><i class="fa-solid fa-info-circle me-1"></i>{{
-                      alert.get_severity_display }}</span>
+                    <span class="badge bg-info-lt"><i class="fa-solid fa-info-circle me-1"></i>{{ alert.get_severity_display }}</span>
                     {% else %}
                     <span class="badge bg-secondary-lt">{{ alert.get_severity_display }}</span>
                     {% endif %}

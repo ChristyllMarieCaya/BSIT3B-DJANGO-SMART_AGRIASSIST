@@ -40,6 +40,113 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       (function () {
+        function initModernSidebar() {
+          const sidebar = document.getElementById('appSidebar');
+          const hamburger = document.getElementById('userSidebarHamburgerBtn');
+          const backdrop = document.getElementById('userSidebarBackdrop');
+          const root = document.documentElement;
+          if (!sidebar) return;
+
+          const categories = sidebar.querySelectorAll('.accordion-category, .sidebar-category');
+
+          function setDesktopCollapsed(collapsed) {
+            root.classList.toggle('sidebar-collapsed', collapsed);
+            if (document.body) document.body.classList.toggle('sidebar-collapsed', collapsed);
+            try {
+              localStorage.setItem('smart_user_sidebar_collapsed', String(collapsed));
+            } catch (e) {}
+          }
+
+          function toggleMobileDrawer(open) {
+            const isShowing = typeof open === 'boolean' ? open : !sidebar.classList.contains('show-drawer');
+            sidebar.classList.toggle('show-drawer', isShowing);
+            if (backdrop) backdrop.classList.toggle('show', isShowing);
+          }
+
+          // Hamburger Menu Toggle
+          if (hamburger) {
+            hamburger.addEventListener('click', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (window.innerWidth < 992) {
+                toggleMobileDrawer();
+              } else {
+                const isCurrentlyCollapsed = root.classList.contains('sidebar-collapsed');
+                setDesktopCollapsed(!isCurrentlyCollapsed);
+              }
+            });
+          }
+
+          // Accordion Category Rows & Auto-Expand on Click
+          categories.forEach(function (cat) {
+            const headerBtn = cat.querySelector('.accordion-header-btn, .category-header-btn');
+            if (!headerBtn) return;
+
+            headerBtn.addEventListener('click', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              const isCollapsed = root.classList.contains('sidebar-collapsed');
+
+              // Auto-Expand Sidebar on Click if in collapsed/icon-only state
+              if (isCollapsed) {
+                setDesktopCollapsed(false);
+                // Expand this clicked category
+                cat.classList.add('is-expanded');
+                // Accordion behavior: collapse other categories
+                categories.forEach(function (other) {
+                  if (other !== cat) other.classList.remove('is-expanded');
+                });
+                return;
+              }
+
+              // Normal Accordion toggle when sidebar is open
+              const wasExpanded = cat.classList.contains('is-expanded');
+
+              // Accordion behavior: collapse other categories
+              categories.forEach(function (other) {
+                other.classList.remove('is-expanded');
+              });
+
+              // Toggle this category
+              if (!wasExpanded) {
+                cat.classList.add('is-expanded');
+              }
+            });
+          });
+
+          // Mobile backdrop click to close
+          if (backdrop) {
+            backdrop.addEventListener('click', function () {
+              toggleMobileDrawer(false);
+            });
+          }
+
+          // Window resize listener: close mobile drawer on desktop
+          window.addEventListener('resize', function () {
+            if (window.innerWidth >= 992) {
+              toggleMobileDrawer(false);
+            }
+          });
+
+          // Restore initial state from localStorage
+          try {
+            const isSavedCollapsed = localStorage.getItem('smart_user_sidebar_collapsed') === 'true';
+            if (window.innerWidth >= 992 && isSavedCollapsed) {
+              setDesktopCollapsed(true);
+            }
+          } catch (e) {}
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initModernSidebar);
+        } else {
+          initModernSidebar();
+        }
+      })();
+    </script>
+    <script>
+      (function () {
         var badge = document.querySelector('[data-notification-unread]');
         if (!badge) return;
 
