@@ -1,14 +1,13 @@
-"""Read-only agricultural crop catalog.
+"""Admin-managed agricultural crop catalog.
 
-Entries are reference data: farmers can browse and search them but cannot
-create, edit, or delete official catalog records.
+Entries are reference data managed by administrators and browsed by farmers.
 """
 
 from django.db import models
 
 
 class CropCatalog(models.Model):
-    """A single crop entry in the read-only agricultural catalog."""
+    """A single administrator-managed crop entry in the farmer-facing catalog."""
 
     class Category(models.TextChoices):
         CEREALS = 'cereals', 'Rice and cereals'
@@ -33,6 +32,7 @@ class CropCatalog(models.Model):
     prevention_treatment = models.TextField(blank=True, help_text='Prevention and treatment guidance.')
     growth_stages = models.TextField(blank=True, help_text='Key growth stages.')
     harvesting = models.TextField(blank=True, help_text='Harvesting and post-harvest recommendations.')
+    reference_photo = models.ImageField(upload_to='crop_catalog/', blank=True)
     reference_photo_url = models.URLField(null=True, blank=True, help_text='Reference photo URL (external source).')
     source_url = models.URLField(null=True, blank=True, help_text='Credible source for this crop information.')
     is_active = models.BooleanField(default=True, help_text='Whether this crop is visible in the catalog.')
@@ -49,3 +49,10 @@ class CropCatalog(models.Model):
 
     def __str__(self):
         return self.common_name
+
+    @property
+    def photo_url(self):
+        """Prefer the uploaded catalog photo while retaining legacy external URLs."""
+        if self.reference_photo:
+            return self.reference_photo.url
+        return self.reference_photo_url or ''

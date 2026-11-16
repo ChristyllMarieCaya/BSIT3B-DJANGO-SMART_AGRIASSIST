@@ -1,8 +1,7 @@
-"""Read-only crop catalog views.
+"""Farmer-facing crop catalog views.
 
-Farmers can browse, search, and filter the agricultural catalog. Catalog
-entries are reference data and cannot be created, edited, or deleted through
-the application.
+Farmers can browse, search, and filter administrator-maintained reference
+entries.
 """
 
 from django.core.paginator import Paginator
@@ -46,7 +45,7 @@ def catalog_list(request):
 
 
 def catalog_detail(request, pk):
-    """Render a single crop's detail page (read-only)."""
+    """Render a single crop's current reference details."""
     crop = get_object_or_404(CropCatalog, pk=pk, is_active=True)
     return render(request, 'catalog/catalog_detail.html', {
         'crop': crop,

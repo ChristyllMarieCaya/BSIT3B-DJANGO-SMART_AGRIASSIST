@@ -559,7 +559,7 @@
       </span>
     </a>
     <button class="dh-hamburger-btn" id="userSidebarHamburgerBtn" type="button" aria-label="Toggle navigation"
-      title="Toggle sidebar">
+      aria-controls="appSidebar" aria-expanded="false" title="Toggle sidebar">
       <i class="fa-solid fa-bars"></i>
     </button>
   </div>
@@ -641,7 +641,7 @@
                 data-notification-icon></i>
             </span>
             <span class="nav-link-title">Notifications</span>
-            <span class="badge bg-danger ms-auto{% if unread_count == 0 %} d-none{% endif %}" data-notification-unread
+            <span class="badge bg-danger ms-2{% if unread_count == 0 %} d-none{% endif %}" data-notification-unread
               data-count-url="{% url 'notifications_api' %}" aria-label="{{ unread_count }} unread notifications">
               {% if unread_count > 99 %}99+{% else %}{{ unread_count }}{% endif %}
             </span>

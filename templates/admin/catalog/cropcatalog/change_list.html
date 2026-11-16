@@ -1,0 +1,203 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+  {{ block.super }}
+  <dialog class="crop-catalog-dialog" id="cropEditDialog" aria-labelledby="cropEditTitle">
+    <div class="crop-catalog-dialog-card">
+      <header class="crop-catalog-dialog-header">
+        <div>
+          <p class="admin-page-eyebrow mb-1">Crop Catalog</p>
+          <h2 id="cropEditTitle" class="h3 mb-0">Edit crop</h2>
+        </div>
+        <button type="button" class="crop-catalog-close" data-close-dialog="cropEditDialog" aria-label="Close">&times;</button>
+      </header>
+      <form id="cropEditForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div id="cropEditFields" class="crop-catalog-fields">
+          <p class="text-muted">Loading crop details...</p>
+        </div>
+        <div class="crop-photo-preview-wrap">
+          <span class="form-label">Photo preview</span>
+          <img id="cropPhotoPreview" class="crop-photo-preview" alt="Crop photo preview" hidden>
+          <p id="cropPhotoEmpty" class="crop-photo-empty">No photo selected.</p>
+        </div>
+        <div id="cropEditError" class="crop-catalog-error" role="alert" hidden></div>
+        <footer class="crop-catalog-dialog-footer">
+          <button type="button" class="btn btn-outline-secondary" data-close-dialog="cropEditDialog">Cancel</button>
+          <button type="submit" class="btn btn-success" id="cropEditSave">
+            <i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>Save changes
+          </button>
+        </footer>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="crop-catalog-dialog crop-delete-dialog" id="cropDeleteDialog" aria-labelledby="cropDeleteTitle">
+    <div class="crop-catalog-dialog-card">
+      <header class="crop-catalog-dialog-header">
+        <div>
+          <p class="admin-page-eyebrow mb-1">Confirm deletion</p>
+          <h2 id="cropDeleteTitle" class="h3 mb-0">Delete crop?</h2>
+        </div>
+        <button type="button" class="crop-catalog-close" data-close-dialog="cropDeleteDialog" aria-label="Close">&times;</button>
+      </header>
+      <p>Remove <strong id="cropDeleteName"></strong> from the crop catalog? This will not remove farmers' registered crop records.</p>
+      <div id="cropDeleteError" class="crop-catalog-error" role="alert" hidden></div>
+      <footer class="crop-catalog-dialog-footer">
+        <button type="button" class="btn btn-outline-secondary" data-close-dialog="cropDeleteDialog">Cancel</button>
+        <button type="button" class="btn btn-danger" id="cropDeleteConfirm">
+          <i class="fa-solid fa-trash me-1" aria-hidden="true"></i>Delete crop
+        </button>
+      </footer>
+    </div>
+  </dialog>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  (function () {
+    const editDialog = document.getElementById('cropEditDialog');
+    const editForm = document.getElementById('cropEditForm');
+    const editFields = document.getElementById('cropEditFields');
+    const editError = document.getElementById('cropEditError');
+    const photoPreview = document.getElementById('cropPhotoPreview');
+    const photoEmpty = document.getElementById('cropPhotoEmpty');
+    const saveButton = document.getElementById('cropEditSave');
+    const deleteDialog = document.getElementById('cropDeleteDialog');
+    const deleteError = document.getElementById('cropDeleteError');
+    const deleteConfirm = document.getElementById('cropDeleteConfirm');
+    let activeDeleteUrl = '';
+    let currentPhotoUrl = '';
+    let previewObjectUrl = '';
+
+    function showPhoto(url) {
+      if (previewObjectUrl && previewObjectUrl !== url) {
+        URL.revokeObjectURL(previewObjectUrl);
+      }
+      previewObjectUrl = url && url.indexOf('blob:') === 0 ? url : '';
+      if (url) photoPreview.src = url;
+      else photoPreview.removeAttribute('src');
+      photoPreview.hidden = !url;
+      photoEmpty.hidden = Boolean(url);
+    }
+
+    function showError(element, message) {
+      element.textContent = message;
+      element.hidden = false;
+    }
+
+    document.addEventListener('click', function (event) {
+      const editButton = event.target.closest('[data-crop-edit-url]');
+      if (editButton) {
+        editError.hidden = true;
+        editFields.innerHTML = '<p class="text-muted">Loading crop details...</p>';
+        currentPhotoUrl = '';
+        showPhoto('');
+        editDialog.dataset.url = editButton.dataset.cropEditUrl;
+        editDialog.showModal();
+        fetch(editDialog.dataset.url, { credentials: 'same-origin' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('Unable to load crop details.');
+            return response.json();
+          })
+          .then(function (data) {
+            document.getElementById('cropEditTitle').textContent = 'Edit ' + data.crop_name;
+            editFields.innerHTML = data.form_html;
+            currentPhotoUrl = data.photo_url;
+            showPhoto(currentPhotoUrl);
+          })
+          .catch(function (error) {
+            showError(editError, error.message);
+          });
+        return;
+      }
+
+      const deleteButton = event.target.closest('[data-crop-delete-url]');
+      if (deleteButton) {
+        activeDeleteUrl = deleteButton.dataset.cropDeleteUrl;
+        document.getElementById('cropDeleteName').textContent = deleteButton.dataset.cropName;
+        deleteError.hidden = true;
+        deleteDialog.showModal();
+        return;
+      }
+
+      const closeButton = event.target.closest('[data-close-dialog]');
+      if (closeButton) document.getElementById(closeButton.dataset.closeDialog).close();
+    });
+
+    editFields.addEventListener('change', function (event) {
+      if (event.target.name === 'reference_photo') {
+        const file = event.target.files && event.target.files[0];
+        if (file) {
+          previewObjectUrl = URL.createObjectURL(file);
+          showPhoto(previewObjectUrl);
+          return;
+        }
+        const clearPhoto = editFields.querySelector('input[name="reference_photo-clear"]');
+        showPhoto(clearPhoto && clearPhoto.checked ? '' : currentPhotoUrl);
+        return;
+      }
+      if (event.target.name === 'reference_photo-clear') {
+        showPhoto(event.target.checked ? '' : currentPhotoUrl);
+      }
+    });
+
+    editForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      editError.hidden = true;
+      saveButton.disabled = true;
+      fetch(editDialog.dataset.url, {
+        method: 'POST',
+        body: new FormData(editForm),
+        credentials: 'same-origin',
+        headers: { 'X-CSRFToken': editForm.querySelector('[name=csrfmiddlewaretoken]').value }
+      })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok) {
+              editFields.innerHTML = data.form_html;
+              currentPhotoUrl = data.photo_url;
+              showPhoto(currentPhotoUrl);
+              showError(editError, 'Please correct the highlighted fields.');
+              throw new Error('validation');
+            }
+            return data;
+          });
+        })
+        .then(function () { window.location.reload(); })
+        .catch(function (error) {
+          if (error.message !== 'validation') showError(editError, 'Unable to save crop changes. Please try again.');
+        })
+        .finally(function () { saveButton.disabled = false; });
+    });
+
+    deleteConfirm.addEventListener('click', function () {
+      deleteError.hidden = true;
+      deleteConfirm.disabled = true;
+      fetch(activeDeleteUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'X-CSRFToken': editForm.querySelector('[name=csrfmiddlewaretoken]').value,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error('Unable to delete crop.');
+          return response.json();
+        })
+        .then(function () { window.location.reload(); })
+        .catch(function () { showError(deleteError, 'Unable to delete this crop. Please try again.'); })
+        .finally(function () { deleteConfirm.disabled = false; });
+    });
+
+    [editDialog, deleteDialog].forEach(function (dialog) {
+      dialog.addEventListener('click', function (event) {
+        if (event.target === dialog) dialog.close();
+      });
+    });
+  })();
+</script>
+{% endblock %}

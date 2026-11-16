@@ -184,6 +184,7 @@ class AdminNotificationCenterTests(TestCase):
         self.alert.save(update_fields=['is_active'])
         response = self.client.get(reverse('admin:index'))
         self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'New User')
         self.assertContains(response, 'Active Growing Crops')
         self.assertContains(response, 'Registered Accounts')
         self.assertContains(response, 'Pending Care Tasks')
@@ -224,28 +225,80 @@ class AdminUserManagementTests(TestCase):
         self.client.force_login(self.admin_user)
 
     def test_user_management_search_filters_summary_and_add_form(self):
-        response = self.client.get(reverse('admin:auth_user_changelist'))
+        changelist_url = reverse('admin:auth_user_changelist')
+        add_url = reverse('admin:auth_user_add')
+        response = self.client.get(changelist_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['cl'].list_per_page, 25)
         self.assertContains(response, 'User Management')
         self.assertContains(response, 'Total registered users')
         self.assertEqual(response.context['total_registered_users'], 2)
+        self.assertContains(
+            response,
+            'class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"',
+        )
+        self.assertContains(response, 'data-user-create-open')
+        self.assertContains(response, 'fa-solid fa-user-plus')
+        self.assertContains(response, '>New User</span>')
+        self.assertNotContains(response, 'Add New User')
 
-        response = self.client.get(reverse('admin:auth_user_changelist'), {'q': 'Maya'})
+        response = self.client.get(changelist_url, {'q': 'Maya'})
         self.assertContains(response, 'searchable-farmer')
 
-        response = self.client.get(reverse('admin:auth_user_changelist'), {'account_role': 'farmer'})
+        response = self.client.get(changelist_url, {'account_role': 'farmer'})
         self.assertContains(response, 'searchable-farmer')
 
-        response = self.client.get(reverse('admin:auth_user_add'))
+        response = self.client.get(add_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Username')
+
+        response = self.client.post(add_url, {
+            'username': 'new-managed-user',
+            'email': 'new-managed-user@example.com',
+            'first_name': 'New',
+            'last_name': 'Farmer',
+            'password1': 'Harvest-Field_Account-2026!',
+            'password2': 'Harvest-Field_Account-2026!',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(username='new-managed-user').exists())
 
     def test_user_change_form_hides_groups_selector(self):
         response = self.client.get(reverse('admin:auth_user_change', args=[self.farmer.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'Available groups')
         self.assertNotContains(response, 'name="groups"')
+
+    def test_user_management_modal_creates_users_and_returns_validation_errors(self):
+        create_url = reverse('admin:auth_user_modal_add')
+        changelist = self.client.get(reverse('admin:auth_user_changelist'))
+        self.assertContains(changelist, 'adminUserCreateDialog')
+        self.assertContains(changelist, create_url)
+        self.assertContains(changelist, 'data-user-create-panel="1"')
+
+        password = 'Harvest-Field_Account-2026!'
+        response = self.client.post(create_url, {
+            'username': 'modal-created-user',
+            'email': 'modal-created-user@example.com',
+            'first_name': 'Modal',
+            'last_name': 'Farmer',
+            'password1': password,
+            'password2': password,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'success': True})
+        created_user = User.objects.get(username='modal-created-user')
+        self.assertEqual(created_user.email, 'modal-created-user@example.com')
+        self.assertEqual(created_user.first_name, 'Modal')
+        self.assertTrue(created_user.check_password(password))
+
+        response = self.client.post(create_url, {
+            'username': self.farmer.username,
+            'password1': password,
+            'password2': password,
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('username', response.json()['errors'])
 
     def test_account_status_action_requires_confirmation_and_has_no_default_password_action(self):
         from apps.core.admin import CustomUserAdmin

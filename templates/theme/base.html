@@ -1,4 +1,5 @@
 {% load static %}
+<!doctype html>
 <html lang="en" data-theme-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}" data-theme-preference="{% if request.user.is_authenticated %}{{ request.user.preference.theme|default:'light' }}{% else %}light{% endif %}">
   <head>
     <meta charset="utf-8"/>
@@ -8,6 +9,7 @@
     <script src="{% static 'js/app-theme.js' %}"></script>
     <link href="{% static 'css/tabler.css' %}" rel="stylesheet"/>
     <link href="{% static 'css/app-theme.css' %}" rel="stylesheet"/>
+    <link href="{% static 'css/mobile.css' %}" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
     <style>
       @import url("https://rsms.me/inter/inter.css");
@@ -15,11 +17,40 @@
     {% block extra_css %}{% endblock %}
   </head>
 
-  <body>
+  <body class="{% if request.user.is_authenticated %}has-mobile-topbar{% endif %}">
     <div class="page">
 
       {% if request.user.is_authenticated %}
         {% include 'theme/sidebar.html' %}
+
+        <header class="mobile-topbar d-lg-none" role="banner">
+          <div class="mobile-topbar__inner">
+            <button class="mobile-topbar__toggle" id="mobileSidebarToggleBtn" type="button"
+              aria-label="Open navigation menu" aria-controls="appSidebar" aria-expanded="false">
+              <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <a href="{% url 'dashboard' %}" class="mobile-topbar__brand" aria-label="SMART AGRIASSIST dashboard">
+              <span class="mobile-topbar__mark" aria-hidden="true">
+                <i class="fa-solid fa-seedling"></i>
+              </span>
+              <span class="mobile-topbar__name">SMART <span class="text-agri">AGRIASSIST</span></span>
+            </a>
+
+            <div class="mobile-topbar__actions">
+              <a href="{% url 'notifications' %}" class="mobile-topbar__action" aria-label="Notifications">
+                <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                <span class="badge bg-danger{% if unread_count == 0 %} d-none{% endif %}" data-notification-unread
+                  data-count-url="{% url 'notifications_api' %}" aria-label="{{ unread_count }} unread notifications">
+                  {% if unread_count > 99 %}99+{% else %}{{ unread_count }}{% endif %}
+                </span>
+              </a>
+              <a href="{% url 'settings' %}" class="mobile-topbar__action" aria-label="Settings">
+                <i class="fa-solid fa-gear" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
+        </header>
       {% endif %}
 
       <div class="page-wrapper">
@@ -42,7 +73,10 @@
       (function () {
         function initModernSidebar() {
           const sidebar = document.getElementById('appSidebar');
-          const hamburger = document.getElementById('userSidebarHamburgerBtn');
+          const hamburgerButtons = [
+            document.getElementById('userSidebarHamburgerBtn'),
+            document.getElementById('mobileSidebarToggleBtn')
+          ].filter(Boolean);
           const backdrop = document.getElementById('userSidebarBackdrop');
           const root = document.documentElement;
           if (!sidebar) return;
@@ -61,10 +95,24 @@
             const isShowing = typeof open === 'boolean' ? open : !sidebar.classList.contains('show-drawer');
             sidebar.classList.toggle('show-drawer', isShowing);
             if (backdrop) backdrop.classList.toggle('show', isShowing);
+            if (document.body) document.body.classList.toggle('mobile-nav-open', isShowing);
+            hamburgerButtons.forEach(function (button) {
+              button.setAttribute('aria-expanded', String(isShowing));
+            });
+            if ('inert' in sidebar) sidebar.inert = window.innerWidth < 992 && !isShowing;
           }
 
-          // Hamburger Menu Toggle
-          if (hamburger) {
+          // Start the off-screen drawer in an inert state on mobile so hidden
+          // navigation links are not reachable by keyboard or screen readers.
+          if (window.innerWidth < 992) {
+            if ('inert' in sidebar) sidebar.inert = true;
+            hamburgerButtons.forEach(function (button) {
+              button.setAttribute('aria-expanded', 'false');
+            });
+          }
+
+          // Hamburger Menu Toggle (in-sidebar button and mobile topbar button)
+          hamburgerButtons.forEach(function (hamburger) {
             hamburger.addEventListener('click', function (e) {
               e.preventDefault();
               e.stopPropagation();
@@ -75,7 +123,7 @@
                 setDesktopCollapsed(!isCurrentlyCollapsed);
               }
             });
-          }
+          });
 
           // Accordion Category Rows & Auto-Expand on Click
           categories.forEach(function (cat) {
@@ -122,10 +170,25 @@
             });
           }
 
+          // Close the drawer after choosing a navigation link on mobile.
+          sidebar.querySelectorAll('a[href]').forEach(function (link) {
+            link.addEventListener('click', function () {
+              if (window.innerWidth < 992) toggleMobileDrawer(false);
+            });
+          });
+
+          // Escape closes the mobile drawer.
+          document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && sidebar.classList.contains('show-drawer')) {
+              toggleMobileDrawer(false);
+            }
+          });
+
           // Window resize listener: close mobile drawer on desktop
           window.addEventListener('resize', function () {
             if (window.innerWidth >= 992) {
               toggleMobileDrawer(false);
+              if ('inert' in sidebar) sidebar.inert = false;
             }
           });
 
@@ -147,19 +210,21 @@
     </script>
     <script>
       (function () {
-        var badge = document.querySelector('[data-notification-unread]');
-        if (!badge) return;
+        var badges = document.querySelectorAll('[data-notification-unread]');
+        if (!badges.length) return;
 
         window.updateNotificationUnreadCount = function (count) {
           if (!Number.isInteger(count) || count < 0) return;
-          badge.textContent = count > 99 ? '99+' : String(count);
-          badge.classList.toggle('d-none', count === 0);
-          badge.setAttribute('aria-label', count + ' unread notifications');
+          badges.forEach(function (badge) {
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.classList.toggle('d-none', count === 0);
+            badge.setAttribute('aria-label', count + ' unread notifications');
+          });
         };
 
         if (document.getElementById('notificationsPage')) return;
 
-        var countUrl = badge.dataset.countUrl;
+        var countUrl = badges[0].dataset.countUrl;
         if (!countUrl) return;
         var requestInFlight = false;
         function refreshUnreadCount() {

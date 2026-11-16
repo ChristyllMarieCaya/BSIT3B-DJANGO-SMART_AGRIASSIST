@@ -1,5 +1,7 @@
 import logging
+
 from django.apps import AppConfig
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,9 @@ class CoreConfig(AppConfig):
         except Exception as exc:
             logger.warning('Could not setup smart admin: %s', exc)
 
-        try:
-            from apps.core.scheduler import start_background_scheduler
-            start_background_scheduler(interval_seconds=600)
-        except Exception as exc:
-            logger.warning('Could not start background scheduler: %s', exc)
+        if getattr(settings, 'ENABLE_BACKGROUND_SCHEDULER', False):
+            try:
+                from apps.core.scheduler import start_background_scheduler
+                start_background_scheduler(interval_seconds=600)
+            except Exception as exc:
+                logger.warning('Could not start background scheduler: %s', exc)

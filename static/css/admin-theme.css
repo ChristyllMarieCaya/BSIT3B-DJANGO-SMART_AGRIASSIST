@@ -748,8 +748,9 @@ body.admin-body {
 }
 
 .admin-changelist-filter {
-  flex: 1 1 10rem;
-  min-width: 9rem;
+  flex: 0 0 12rem;
+  min-width: 12rem;
+  width: 12rem;
 }
 
 .admin-changelist-filter label {
@@ -763,9 +764,14 @@ body.admin-body {
 .admin-changelist-filter-select {
   background-color: var(--agri-input-bg) !important;
   border: 1px solid var(--agri-input-border) !important;
+  box-sizing: border-box;
   color: var(--agri-text) !important;
   min-height: 2.45rem;
+  min-width: 0;
+  overflow: hidden;
   padding: 0.45rem 2rem 0.45rem 0.7rem !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   width: 100%;
 }
 
@@ -2716,3 +2722,607 @@ ul.toplinks a {
   transform: translateY(0) !important;
 }
 
+/* Keep admin selects and filter panels independent of selected option text. */
+.admin-body select {
+  box-sizing: border-box !important;
+  field-sizing: fixed !important;
+  flex: 0 0 12rem !important;
+  max-width: 12rem !important;
+  min-width: 12rem !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 12rem !important;
+}
+
+.admin-body .admin-changelist-filters {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.admin-body .admin-changelist-filters > .admin-changelist-filter {
+  box-sizing: border-box;
+  flex: 0 0 12rem !important;
+  max-width: 12rem !important;
+  min-width: 12rem !important;
+  width: 12rem !important;
+}
+
+.admin-body .admin-changelist-filters .admin-changelist-filter-select {
+  flex: 0 0 12rem !important;
+  max-width: 12rem !important;
+  min-width: 12rem !important;
+  width: 12rem !important;
+}
+
+.admin-body #changelist-filter {
+  box-sizing: border-box;
+  flex: 0 0 18rem;
+  max-width: 18rem;
+  min-width: 18rem;
+  overflow-wrap: anywhere;
+  width: 18rem;
+}
+
+.admin-body.app-crops.model-scheduledreminder #changelist-filter {
+  flex-basis: 290px;
+  max-width: 290px;
+  min-width: 290px;
+}
+
+@media (max-width: 767.98px) {
+  .admin-body select {
+    flex-basis: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .admin-body .admin-changelist-filters {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  .admin-body .admin-changelist-filters > .admin-changelist-filter,
+  .admin-body .admin-changelist-filters .admin-changelist-filter-select {
+    flex-basis: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .admin-body #changelist-filter {
+    flex-basis: 100%;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-body.app-crops.model-scheduledreminder #changelist-filter {
+    flex-basis: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Multi-step User Management creation dialog */
+.admin-user-create-dialog {
+  border: 1px solid var(--agri-border);
+  border-radius: 1rem;
+  box-sizing: border-box;
+  color: var(--agri-text);
+  margin: auto;
+  max-height: calc(100vh - 1.5rem);
+  max-width: calc(100vw - 1rem);
+  overflow: auto;
+  padding: 0;
+  width: min(94vw, 520px);
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.22);
+}
+
+.admin-user-create-dialog::backdrop {
+  background: rgba(248, 250, 252, 0.34);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.admin-user-create-dialog form {
+  background: var(--agri-card-bg);
+}
+
+.admin-user-create-dialog [hidden] {
+  display: none !important;
+}
+
+.admin-user-create-header {
+  align-items: center;
+  background: var(--agri-card-bg);
+  border-bottom: 1px solid var(--agri-border);
+  box-sizing: border-box;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-height: 4.7rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.admin-user-create-heading {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.admin-user-create-icon {
+  align-items: center;
+  color: var(--agri-text);
+  display: inline-flex;
+  flex: 0 0 2.1rem;
+  font-size: 1.7rem;
+  justify-content: center;
+}
+
+.admin-user-create-header h2 {
+  color: var(--agri-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.admin-user-create-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
+  color: var(--agri-text);
+  display: inline-flex;
+  flex: 0 0 2.25rem;
+  height: 2.25rem;
+  justify-content: center;
+  font-size: 1.15rem;
+}
+
+.admin-user-create-close:hover {
+  background: var(--agri-card-hover);
+  color: var(--agri-text);
+}
+
+.admin-user-create-progress {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 1.15rem 1rem 1.45rem;
+}
+
+.admin-user-create-progress li {
+  align-items: center;
+  color: #858b92;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  height: 1.8rem;
+  justify-content: center;
+}
+
+.admin-user-create-progress li[data-user-create-indicator="1"].is-current {
+  color: var(--agri-accent);
+}
+
+.admin-user-create-progress-back {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1;
+  padding: 0;
+}
+
+.admin-user-create-progress-back:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.admin-user-create-progress-track {
+  background: #e0e4e8;
+  border-radius: 999px;
+  flex: 0 1 11.5rem !important;
+  height: 0.32rem !important;
+  overflow: hidden;
+}
+
+.admin-user-create-progress-track span {
+  background: #8c939a;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  transition: width 0.2s ease, background-color 0.2s ease;
+  width: 50%;
+}
+
+.admin-user-create-progress-track.is-complete span {
+  background: var(--agri-accent);
+  width: 100%;
+}
+
+.admin-user-create-badge {
+  background: var(--agri-accent-subtle);
+  border-radius: 0.35rem;
+  color: var(--agri-accent);
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.55rem;
+  text-transform: uppercase;
+}
+
+.admin-user-create-intro {
+  color: var(--agri-text-muted);
+  font-size: 0.98rem;
+  line-height: 1.45;
+  margin: 0.65rem 0 1.8rem;
+}
+
+.admin-user-create-step-title {
+  color: var(--agri-text);
+  font-size: 1.3rem;
+  font-weight: 650;
+  margin: 0.8rem 0 0;
+}
+
+.admin-user-create-body {
+  box-sizing: border-box;
+  min-height: 26.5rem;
+  padding: 0.6rem 1.1rem 1.15rem;
+}
+
+.admin-user-create-dialog[data-user-create-step="0"] .admin-user-create-body {
+  min-height: 29rem;
+}
+
+.admin-user-create-dialog[data-user-create-step="1"] .admin-user-create-body {
+  min-height: 27.5rem;
+}
+
+.admin-user-create-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-user-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-user-create-field label {
+  color: var(--agri-text);
+  font-size: 0.96rem;
+  font-weight: 450;
+}
+
+.admin-user-create-field label span {
+  color: var(--agri-danger);
+}
+
+.admin-user-create-field .form-control {
+  background: var(--agri-card-bg);
+  border-color: var(--agri-border);
+  border-radius: 0.7rem;
+  color: var(--agri-text);
+  min-height: 2.9rem;
+}
+
+.admin-user-create-field .form-control:focus {
+  border-color: var(--agri-accent);
+  box-shadow: 0 0 0 0.2rem var(--agri-accent-subtle);
+}
+
+.admin-user-create-field .form-control.is-invalid {
+  border-color: var(--agri-danger);
+}
+
+.admin-user-create-error {
+  color: var(--agri-danger);
+  font-size: 0.76rem;
+}
+
+.admin-user-create-status {
+  background: var(--agri-danger-bg);
+  border: 1px solid var(--agri-danger);
+  border-radius: 0.65rem;
+  color: var(--agri-danger);
+  font-size: 0.84rem;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.85rem;
+}
+
+.admin-user-create-footer {
+  align-items: center;
+  border-top: 1px solid var(--agri-border);
+  display: flex;
+  gap: 0.55rem;
+  padding: 0.95rem 1.1rem 1.1rem;
+}
+
+.admin-user-create-footer .btn {
+  border-radius: 0.6rem;
+  flex: 1 1 0;
+  font-size: 0.95rem;
+  min-height: 3.1rem;
+}
+
+.admin-user-create-footer [data-user-create-submit] {
+  flex-basis: 100%;
+}
+
+@media (max-width: 575.98px) {
+  .admin-user-create-dialog {
+    max-height: calc(100vh - 1rem);
+    width: calc(100vw - 1rem);
+  }
+
+  .admin-user-create-header {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .admin-user-create-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .admin-user-create-body {
+    min-height: 25.5rem;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .admin-user-create-footer {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .admin-user-create-progress-track {
+    flex-basis: 8rem !important;
+  }
+}
+
+/* Crop catalog row actions and edit/delete dialogs */
+.crop-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 9.5rem;
+}
+
+.crop-action-button {
+  align-items: center;
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 0.45rem;
+  color: var(--agri-text);
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.76rem;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.crop-action-edit:hover {
+  border-color: var(--agri-accent);
+  color: var(--agri-accent);
+}
+
+.crop-action-delete {
+  color: var(--agri-danger);
+}
+
+.crop-action-delete:hover {
+  background: var(--agri-danger-bg);
+  border-color: var(--agri-danger);
+}
+
+.crop-catalog-dialog {
+  background: transparent;
+  border: 0;
+  color: var(--agri-text);
+  margin: auto;
+  max-height: calc(100dvh - 2rem);
+  max-width: min(94vw, 760px);
+  overflow: auto;
+  padding: 0;
+  width: 100%;
+}
+
+.admin-body .crop-catalog-dialog {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.crop-catalog-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.38);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.crop-catalog-dialog-card {
+  background: var(--agri-card-bg);
+  border: 1px solid var(--agri-border);
+  border-radius: 1rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+  padding: 1.25rem;
+}
+
+.crop-catalog-dialog-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--agri-border);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+}
+
+.crop-catalog-close {
+  background: transparent;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--agri-text-muted);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.crop-catalog-fields {
+  display: grid;
+  gap: 0.75rem 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: min(54vh, 570px);
+  overflow: auto;
+  padding: 0.15rem 0.2rem 0.5rem 0;
+}
+
+.crop-catalog-fields p {
+  margin: 0;
+  min-width: 0;
+}
+
+.crop-catalog-fields p:has(textarea),
+.crop-catalog-fields p:has(input[type="file"]),
+.crop-catalog-fields p:has(input[type="checkbox"]),
+.crop-catalog-fields p:has(.help),
+.crop-catalog-fields p:has(.errorlist) {
+  grid-column: 1 / -1;
+}
+
+.crop-catalog-fields label,
+.crop-photo-preview-wrap > .form-label {
+  color: var(--agri-text);
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 650;
+  margin-bottom: 0.3rem;
+}
+
+.crop-catalog-fields input:not([type="checkbox"]):not([type="file"]),
+.crop-catalog-fields select,
+.crop-catalog-fields textarea {
+  background: var(--agri-input-bg);
+  border: 1px solid var(--agri-input-border);
+  border-radius: 0.55rem;
+  box-sizing: border-box;
+  color: var(--agri-text);
+  max-width: 100%;
+  padding: 0.55rem 0.65rem;
+  width: 100%;
+}
+
+.crop-catalog-fields textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.crop-catalog-fields input[type="checkbox"] {
+  margin-right: 0.4rem;
+}
+
+.crop-catalog-fields .help,
+.crop-catalog-fields .helptext {
+  color: var(--agri-text-muted);
+  display: block;
+  font-size: 0.72rem;
+  margin-top: 0.2rem;
+}
+
+.crop-catalog-fields .errorlist {
+  color: var(--agri-danger);
+  font-size: 0.75rem;
+  margin: 0 0 0.3rem;
+  padding-left: 1rem;
+}
+
+.crop-photo-preview-wrap {
+  border-top: 1px solid var(--agri-border);
+  margin-top: 0.7rem;
+  padding-top: 0.8rem;
+}
+
+.crop-photo-preview {
+  border: 1px solid var(--agri-border);
+  border-radius: 0.65rem;
+  display: block;
+  max-height: 180px;
+  max-width: 100%;
+  object-fit: cover;
+}
+
+.crop-photo-empty {
+  color: var(--agri-text-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.crop-catalog-dialog-footer {
+  border-top: 1px solid var(--agri-border);
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.crop-catalog-error {
+  background: var(--agri-danger-bg);
+  border: 1px solid var(--agri-danger);
+  border-radius: 0.55rem;
+  color: var(--agri-danger);
+  font-size: 0.82rem;
+  margin-top: 0.8rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.crop-delete-dialog {
+  max-width: min(94vw, 480px);
+}
+
+.catalog-crop-icon-photo {
+  border-radius: inherit;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.catalog-page .crop-icon:has(.catalog-crop-icon-photo) {
+  overflow: hidden;
+  padding: 0;
+}
+
+.catalog-quick-facts-photo {
+  max-height: 200px;
+  object-fit: cover;
+  width: 100%;
+}
+
+@media (max-width: 575.98px) {
+  .crop-catalog-dialog-card {
+    padding: 0.95rem;
+  }
+
+  .crop-catalog-fields {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 52vh;
+  }
+
+  .crop-catalog-fields p:has(textarea),
+  .crop-catalog-fields p:has(input[type="file"]),
+  .crop-catalog-fields p:has(input[type="checkbox"]),
+  .crop-catalog-fields p:has(.help),
+  .crop-catalog-fields p:has(.errorlist) {
+    grid-column: auto;
+  }
+}

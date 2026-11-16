@@ -1,7 +1,7 @@
 {% extends "theme/base.html" %}
 {% block title %}Crop Information — SMART AGRIASSIST{% endblock %}
 {% block content %}
-<div class="container-xl">
+<div class="container-xl catalog-page">
   <!-- Page header -->
   <div class="page-header d-print-none" aria-label="Page header">
     <div class="row align-items-center">
@@ -59,7 +59,11 @@
         <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
           <div class="crop-card h-100">
             <span class="crop-icon">
+              {% if crop.photo_url %}
+              <img src="{{ crop.photo_url }}" alt="{{ crop.common_name }}" class="catalog-crop-icon-photo">
+              {% else %}
               <i class="fa-solid fa-leaf"></i>
+              {% endif %}
             </span>
             <h5 class="crop-name">{{ crop.common_name }}</h5>
             <p class="crop-meta text-muted small">{{ crop.scientific_name }}</p>

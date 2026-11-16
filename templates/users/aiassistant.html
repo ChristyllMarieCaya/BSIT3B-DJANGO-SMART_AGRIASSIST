@@ -1,7 +1,7 @@
 {% extends "theme/base.html" %}
 {% block title %}Agri AI Assistant — SMART AGRIASSIST{% endblock %}
 {% block content %}
-<div class="container-xl">
+<div class="container-xl ai-page">
   <!-- Page header -->
   <div class="page-header d-print-none mb-3" aria-label="Page header">
     <div class="row align-items-center">
@@ -11,6 +11,11 @@
         <p class="text-muted mb-0">Ask natural farming questions, attach crop leaf photos for disease diagnosis, and get stage-specific recommendations.</p>
       </div>
       <div class="col-auto d-flex gap-2 align-items-center">
+        <!-- Mobile-only conversation history toggle -->
+        <button type="button" class="btn btn-outline-secondary d-md-none" id="mobileHistoryToggle"
+          aria-expanded="false" aria-controls="aiHistoryColumn" title="Show conversation history">
+          <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+        </button>
         <!-- New Conversation button -->
         <button type="button" class="btn btn-outline-success" id="newConvBtn" title="Start a fresh chat conversation">
           <i class="fa-solid fa-plus me-1"></i> New Conversation
@@ -70,7 +75,7 @@
 
   <div class="row g-3">
     <!-- Past Conversations Drawer / Sidebar -->
-    <div class="col-md-3 d-none d-md-block">
+    <div class="col-12 col-md-3 d-none d-md-block ai-history-column" id="aiHistoryColumn">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-2 px-3">
           <span class="small fw-bold text-muted">Conversation History</span>
@@ -167,6 +172,10 @@
                 <canvas id="chatCameraCanvas" style="display: none;"></canvas>
                 <div class="mt-3 d-flex gap-2 justify-content-center">
                   <button type="button" class="btn btn-outline-secondary" id="chatCameraStart">Start Camera</button>
+                  <button type="button" class="btn btn-outline-secondary d-md-none" id="chatCameraSwitch"
+                    title="Switch to back camera" aria-label="Switch to back camera" disabled>
+                    <i class="fa-solid fa-camera-rotate" aria-hidden="true"></i>
+                  </button>
                   <button type="button" class="btn btn-success" id="chatCameraCapture" disabled>Capture</button>
                   <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
@@ -196,6 +205,21 @@
   var refreshConversationsBtn = document.getElementById('refreshConversationsBtn');
   var newConvBtn = document.getElementById('newConvBtn');
   var clearConvBtn = document.getElementById('clearConvBtn');
+  var historyColumn = document.getElementById('aiHistoryColumn');
+  var mobileHistoryToggle = document.getElementById('mobileHistoryToggle');
+
+  function closeMobileHistory() {
+    if (!historyColumn || !mobileHistoryToggle) return;
+    historyColumn.classList.remove('is-open');
+    mobileHistoryToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (mobileHistoryToggle && historyColumn) {
+    mobileHistoryToggle.addEventListener('click', function () {
+      var isOpen = historyColumn.classList.toggle('is-open');
+      mobileHistoryToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  }
 
   // Image upload state
   var imageFileInput = document.getElementById('chatImageFile');
@@ -211,9 +235,11 @@
   var cameraVideo = document.getElementById('chatCameraVideo');
   var cameraCanvas = document.getElementById('chatCameraCanvas');
   var cameraStartBtn = document.getElementById('chatCameraStart');
+  var cameraSwitchBtn = document.getElementById('chatCameraSwitch');
   var cameraCaptureBtn = document.getElementById('chatCameraCapture');
   var cameraStatus = document.getElementById('chatCameraStatus');
   var cameraStream = null;
+  var cameraFacingMode = null;
 
   function scrollBottom() {
     messages.scrollTop = messages.scrollHeight;
@@ -389,6 +415,7 @@
           openButton.appendChild(details);
           openButton.addEventListener('click', function() {
             switchConversation(c.id);
+            closeMobileHistory();
           });
 
           var deleteButton = document.createElement('button');
@@ -521,17 +548,75 @@
   cameraStartBtn.addEventListener('click', function () {
     cameraStatus.textContent = 'Requesting camera access...';
     cameraStartBtn.disabled = true;
+    cameraSwitchBtn.disabled = true;
     cameraCaptureBtn.disabled = true;
 
-    navigator.mediaDevices.getUserMedia({ video: true })
+    var isMobileCamera = window.matchMedia('(max-width: 767.98px)').matches;
+    var initialFacingMode = isMobileCamera ? 'user' : null;
+    var cameraConstraints = initialFacingMode
+      ? { video: { facingMode: { ideal: initialFacingMode } } }
+      : { video: true };
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      cameraStatus.textContent = 'Camera unavailable: this browser does not support camera access.';
+      cameraStartBtn.disabled = false;
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia(cameraConstraints)
       .then(function (stream) {
         cameraStream = stream;
         cameraVideo.srcObject = stream;
+        var videoTrack = stream.getVideoTracks()[0];
+        var actualFacingMode = videoTrack && videoTrack.getSettings
+          ? videoTrack.getSettings().facingMode
+          : null;
+        cameraFacingMode = actualFacingMode || initialFacingMode;
+        if (isMobileCamera) {
+          var nextCameraLabel = cameraFacingMode === 'user' ? 'back' : 'front';
+          cameraSwitchBtn.title = 'Switch to ' + nextCameraLabel + ' camera';
+          cameraSwitchBtn.setAttribute('aria-label', 'Switch to ' + nextCameraLabel + ' camera');
+        }
         cameraStatus.textContent = 'Camera ready. Position the crop leaf or stem and click Capture.';
         cameraCaptureBtn.disabled = false;
+        cameraSwitchBtn.disabled = !isMobileCamera;
       })
       .catch(function (err) {
         cameraStatus.textContent = 'Camera unavailable: ' + err.message;
+        cameraStartBtn.disabled = false;
+      });
+  });
+
+  cameraSwitchBtn.addEventListener('click', function () {
+    if (!cameraFacingMode || !cameraStream) return;
+
+    var previousFacingMode = cameraFacingMode;
+    var targetFacingMode = previousFacingMode === 'user' ? 'environment' : 'user';
+    cameraStatus.textContent = 'Switching to ' + (targetFacingMode === 'environment' ? 'back' : 'front') + ' camera...';
+    cameraSwitchBtn.disabled = true;
+    cameraCaptureBtn.disabled = true;
+    cameraStream.getTracks().forEach(function (track) { track.stop(); });
+    cameraStream = null;
+    cameraVideo.srcObject = null;
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: targetFacingMode } }
+    })
+      .then(function (stream) {
+        cameraStream = stream;
+        cameraFacingMode = targetFacingMode;
+        cameraVideo.srcObject = stream;
+        var nextLabel = targetFacingMode === 'environment' ? 'front' : 'back';
+        cameraSwitchBtn.title = 'Switch to ' + nextLabel + ' camera';
+        cameraSwitchBtn.setAttribute('aria-label', 'Switch to ' + nextLabel + ' camera');
+        cameraStatus.textContent = 'Camera ready. Position the crop leaf or stem and click Capture.';
+        cameraSwitchBtn.disabled = false;
+        cameraCaptureBtn.disabled = false;
+      })
+      .catch(function (err) {
+        cameraFacingMode = null;
+        cameraStatus.textContent = 'Unable to switch to ' +
+          (targetFacingMode === 'environment' ? 'back' : 'front') + ' camera: ' + err.message;
         cameraStartBtn.disabled = false;
       });
   });
@@ -568,7 +653,11 @@
       cameraStream = null;
     }
     cameraStartBtn.disabled = false;
+    cameraSwitchBtn.disabled = true;
     cameraCaptureBtn.disabled = true;
+    cameraFacingMode = null;
+    cameraSwitchBtn.title = 'Switch to back camera';
+    cameraSwitchBtn.setAttribute('aria-label', 'Switch to back camera');
     cameraStatus.textContent = 'Click Start to enable the camera.';
   });
 

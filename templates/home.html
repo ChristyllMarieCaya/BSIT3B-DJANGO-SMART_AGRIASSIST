@@ -1,7 +1,7 @@
 {% extends "theme/base.html" %}
 {% block title %}Dashboard — SMART AGRIASSIST{% endblock %}
 {% block content %}
-<div class="container-xl">
+<div class="container-xl dashboard-page">
   <!-- Page header -->
   <div class="page-header d-print-none mb-4" aria-label="Page header">
     <div class="row align-items-center">
@@ -134,7 +134,7 @@
     <!-- LEFT COLUMN: Crop Management, Tasks & Diagnoses -->
     <div class="col-lg-6 col-xl-7 d-flex flex-column gap-4">
       <!-- 1. Active Crop Growth Stages Card -->
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm crop-stage-card">
         <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
           <span class="card-title fw-bold">
             <i class="fa-solid fa-wheat-awn text-success me-2"></i> Active Crop Growth Stages
@@ -146,7 +146,7 @@
           <div class="d-flex flex-column gap-3">
             {% for crop in active_crops %}
             <div class="p-3 border rounded bg-light">
-              <div class="d-flex justify-content-between align-items-center mb-1">
+              <div class="crop-stage-top d-flex justify-content-between align-items-center mb-1">
                 <div>
                   <strong class="h5 mb-0 text-dark">{{ crop.crop_name }}</strong>
                   {% if crop.variety %}<span class="badge bg-secondary-lt ms-1">{{ crop.variety }}</span>{% endif %}

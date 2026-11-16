@@ -1,6 +1,5 @@
 {% extends "theme/base.html" %}
-{% block title %}{% if action == 'edit' %}Edit Crop Record{% else %}Register New Crop{% endif %} — SMART AGRIASSIST{%
-endblock %}
+{% block title %}{% if action == 'edit' %}Edit Crop Record{% else %}Register New Crop{% endif %} — SMART AGRIASSIST{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -219,7 +218,7 @@ endblock %}
 {% endblock %}
 
 {% block content %}
-<div class="container-xl">
+<div class="container-xl crops-page">
 
   {% if messages %}
   <div class="row justify-content-center">
@@ -368,12 +367,12 @@ endblock %}
               <i class="fa-solid fa-arrows-spin text-muted"></i> Operational Status
             </label>
             <select name="status" id="statusSelect" class="form-select modern-select">
-              <option value="active" {% if crop.status=='active' %}selected{% endif %}>Active (Growing / In Progress)
+              <option value="active" {% if crop.status == 'active' %}selected{% endif %}>Active (Growing / In Progress)
               </option>
-              <option value="harvested" {% if crop.status=='harvested' %}selected{% endif %}>Harvested (Completed)
+              <option value="harvested" {% if crop.status == 'harvested' %}selected{% endif %}>Harvested (Completed)
               </option>
-              <option value="lost" {% if crop.status=='lost' %}selected{% endif %}>Crop Loss / Discontinued</option>
-              <option value="planned" {% if crop.status=='planned' %}selected{% endif %}>Planned (Upcoming Season)
+              <option value="lost" {% if crop.status == 'lost' %}selected{% endif %}>Crop Loss / Discontinued</option>
+              <option value="planned" {% if crop.status == 'planned' %}selected{% endif %}>Planned (Upcoming Season)
               </option>
             </select>
           </div>

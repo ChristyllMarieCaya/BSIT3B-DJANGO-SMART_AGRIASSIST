@@ -1,7 +1,7 @@
 {% extends "theme/base.html" %}
 {% block title %}Crop Diagnoses History — SMART AGRIASSIST{% endblock %}
 {% block content %}
-<div class="container-xl">
+<div class="container-xl diagnoses-page">
   <div class="page-header d-print-none mb-4">
     <div class="row align-items-center">
       <div class="col">
@@ -22,7 +22,7 @@
   {% if diagnoses %}
   <form id="diagnosisBulkForm">
     {% csrf_token %}
-    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+    <div class="d-flex justify-content-end align-items-center gap-2 mb-3 diagnoses-bulk-bar">
       <label class="form-check mb-0">
         <input type="checkbox" class="form-check-input" id="selectAllDiagnoses">
         <span class="form-check-label">Select all</span>

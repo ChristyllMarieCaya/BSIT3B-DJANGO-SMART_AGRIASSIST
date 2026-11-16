@@ -1,8 +1,11 @@
+from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Count, Q
-from django.urls import reverse
+from django.http import JsonResponse
+from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -34,6 +37,15 @@ class UserRoleFilter(admin.SimpleListFilter):
         return queryset
 
 
+class AdminUserCreationForm(UserCreationForm):
+    email = forms.EmailField(required=False)
+    first_name = forms.CharField(max_length=150, required=False)
+    last_name = forms.CharField(max_length=150, required=False)
+
+    class Meta(UserCreationForm.Meta):
+        fields = ('username', 'first_name', 'last_name', 'email')
+
+
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
     """Admin configuration allowing administrators to easily view, edit, inspect portfolios, change passwords, and manage users."""
@@ -58,6 +70,38 @@ class CustomUserAdmin(BaseUserAdmin):
     list_per_page = 25
     change_list_template = 'admin/users/change_list.html'
     actions = ['deactivate_users', 'activate_users']
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                'modal-add/',
+                self.admin_site.admin_view(self.modal_add_view),
+                name='auth_user_modal_add',
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def modal_add_view(self, request):
+        if request.method != 'POST':
+            return JsonResponse({'error': 'POST required.'}, status=405)
+        if not self.has_add_permission(request):
+            return JsonResponse({'error': 'You do not have permission to add users.'}, status=403)
+
+        form = AdminUserCreationForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse(
+                {'success': False, 'errors': form.errors.get_json_data()},
+                status=400,
+            )
+
+        new_user = form.save()
+        self.log_addition(request, new_user, _('Created from User Management.'))
+        self.message_user(
+            request,
+            _('User "%(username)s" was created successfully.') % {'username': new_user.username},
+            messages.SUCCESS,
+        )
+        return JsonResponse({'success': True})
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

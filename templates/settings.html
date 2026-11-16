@@ -1,7 +1,7 @@
 {% extends "theme/base.html" %}
 {% block title %}Settings &amp; Personalization — SMART AGRIASSIST{% endblock %}
 {% block content %}
-<div class="container-xl">
+<div class="container-xl settings-page">
   <!-- Page header -->
   <div class="page-header d-print-none mb-4" aria-label="Page header">
     <div class="row align-items-center">
@@ -121,7 +121,7 @@
 
               <!-- Searchable Time Zone Selector -->
               <div class="col-12 border-top pt-3">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="settings-row d-flex justify-content-between align-items-center mb-1">
                   <label class="form-label fw-bold mb-0">Preferred Display Time Zone (IANA Standard)</label>
                   <span class="badge bg-secondary-lt text-secondary small">Auto Daylight Saving (DST)</span>
                 </div>
@@ -219,7 +219,7 @@
                 <div class="form-hint" id="gpsStatus">Coordinates enable pinpoint Open-Meteo forecasting and automatic risk detection for your specific field.</div>
               </div>
               <div class="col-12 border-top pt-2">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="settings-row d-flex justify-content-between align-items-center">
                   <span class="small text-muted">Manage registered crops on this farm:</span>
                   <a href="{% url 'crops:crop_tracker' %}" class="btn btn-sm btn-outline-secondary">
                     <i class="fa-solid fa-wheat-awn me-1"></i> Open Crop Tracker
@@ -327,7 +327,7 @@
           </div>
           <div class="card-body">
             <div class="d-flex flex-column gap-3">
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+              <div class="settings-row d-flex justify-content-between align-items-center p-2 rounded bg-light">
                 <div>
                   <div class="fw-semibold small"><i class="fa-solid fa-bell me-1 text-primary"></i> In-App Notifications</div>
                   <div class="text-muted" style="font-size: 0.75rem;">Dashboard &amp; notification center alerts.</div>
@@ -337,7 +337,7 @@
                 </div>
               </div>
 
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+              <div class="settings-row d-flex justify-content-between align-items-center p-2 rounded bg-light">
                 <div>
                   <div class="fw-semibold small"><i class="fa-solid fa-globe me-1 text-info"></i> Browser Push Notifications</div>
                   <div class="text-muted" style="font-size: 0.75rem;">Instant desktop/mobile browser alerts when weather threatens crops.</div>
@@ -350,7 +350,7 @@
                 </div>
               </div>
 
-              <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+              <div class="settings-row d-flex justify-content-between align-items-center p-2 rounded bg-light">
                 <div>
                   <div class="fw-semibold small"><i class="fa-solid fa-envelope me-1 text-warning"></i> Email Alerts</div>
                   <div class="text-muted" style="font-size: 0.75rem;">Sends urgent severe weather warnings to {{ user.email|default:'your email' }}.</div>
@@ -416,7 +416,7 @@
     </div>
 
     <!-- Bottom Save Button Bar -->
-    <div class="card border-0 shadow-sm p-3 d-flex flex-row justify-content-between align-items-center">
+    <div class="card border-0 shadow-sm p-3 settings-save-bar d-flex flex-row justify-content-between align-items-center">
       <span class="small text-muted">All preferences are saved directly to your account and applied immediately.</span>
       <button type="submit" class="btn btn-success px-4" id="bottomSaveBtn">
         <i class="fa-solid fa-floppy-disk me-1"></i> Save Preferences

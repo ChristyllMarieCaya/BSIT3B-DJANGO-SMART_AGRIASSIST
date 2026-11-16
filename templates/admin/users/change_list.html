@@ -8,10 +8,11 @@
     <p class="text-muted mb-0">Inspect farmer portfolios, manage account privileges, monitor field activities, and track crop lifecycles.</p>
   </div>
   {% if has_add_permission %}
-    <a class="btn btn-success d-inline-flex align-items-center gap-2 shadow-sm" href="{{ add_url }}">
+    <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2"
+      data-user-create-open aria-haspopup="dialog" aria-controls="adminUserCreateDialog">
       <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-      <span>Add New User</span>
-    </a>
+      <span>New User</span>
+    </button>
   {% endif %}
 </header>
 {% endblock %}
@@ -36,4 +37,261 @@
   </article>
 </div>
 {{ block.super }}
+{% if has_add_permission %}
+<dialog class="admin-user-create-dialog" id="adminUserCreateDialog" data-user-create-step="0"
+  aria-labelledby="adminUserCreateTitle">
+  <form id="adminUserCreateForm" method="post" action="{% url 'admin:auth_user_modal_add' %}" novalidate>
+    {% csrf_token %}
+    <div class="admin-user-create-header">
+      <div class="admin-user-create-heading">
+        <span class="admin-user-create-icon" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
+        <h2 id="adminUserCreateTitle">Create User - Step <span data-user-create-step-label>1/2</span></h2>
+      </div>
+      <button type="button" class="admin-user-create-close" data-user-create-close aria-label="Close dialog">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <ol class="admin-user-create-progress" aria-label="User creation steps">
+      <li data-user-create-indicator="0">
+        <button type="button" class="admin-user-create-progress-back" data-user-create-back
+          aria-label="Back to profile details" disabled>
+          <i class="fa-solid fa-user" aria-hidden="true"></i>
+        </button>
+        <span class="visually-hidden">Profile details</span>
+      </li>
+      <li class="admin-user-create-progress-track" aria-hidden="true"><span></span></li>
+      <li data-user-create-indicator="1">
+        <i class="fa-solid fa-key" aria-hidden="true"></i>
+        <span class="visually-hidden">Password</span>
+      </li>
+    </ol>
+
+    <div class="admin-user-create-body">
+      <div class="admin-user-create-status" data-user-create-status role="alert" aria-live="assertive" hidden></div>
+
+      <section data-user-create-panel="0" aria-label="Profile details">
+        <span class="admin-user-create-badge">New account</span>
+        <p class="admin-user-create-intro">Enter the account details, then choose a secure password.</p>
+        <div class="admin-user-create-grid">
+          <div class="admin-user-create-field">
+            <label for="newUserUsername">Username</label>
+            <input class="form-control" id="newUserUsername" name="username" type="text"
+              autocomplete="username" maxlength="150" required aria-describedby="newUserUsernameError">
+            <div class="admin-user-create-error" id="newUserUsernameError" data-user-create-error="username" hidden></div>
+          </div>
+          <div class="admin-user-create-field">
+            <label for="newUserEmail">Email address</label>
+            <input class="form-control" id="newUserEmail" name="email" type="email" autocomplete="email"
+              aria-describedby="newUserEmailError">
+            <div class="admin-user-create-error" id="newUserEmailError" data-user-create-error="email" hidden></div>
+          </div>
+          <div class="admin-user-create-field">
+            <label for="newUserFirstName">First name</label>
+            <input class="form-control" id="newUserFirstName" name="first_name" type="text"
+              autocomplete="given-name" maxlength="150" aria-describedby="newUserFirstNameError">
+            <div class="admin-user-create-error" id="newUserFirstNameError" data-user-create-error="first_name" hidden></div>
+          </div>
+          <div class="admin-user-create-field">
+            <label for="newUserLastName">Last name</label>
+            <input class="form-control" id="newUserLastName" name="last_name" type="text"
+              autocomplete="family-name" maxlength="150" aria-describedby="newUserLastNameError">
+            <div class="admin-user-create-error" id="newUserLastNameError" data-user-create-error="last_name" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <section data-user-create-panel="1" aria-label="Set password" hidden>
+        <span class="admin-user-create-badge">New account</span>
+        <h3 class="admin-user-create-step-title">Choose a password</h3>
+        <p class="admin-user-create-intro">Choose a secure password and review your account details.</p>
+        <div class="admin-user-create-field">
+          <label for="newUserPassword">Password <span aria-hidden="true">*</span></label>
+          <input class="form-control" id="newUserPassword" name="password1" type="password"
+            autocomplete="new-password" required aria-describedby="newUserPasswordError">
+          <div class="admin-user-create-error" id="newUserPasswordError" data-user-create-error="password1" hidden></div>
+        </div>
+        <div class="admin-user-create-field mt-3">
+          <label for="newUserPasswordConfirm">Confirm password <span aria-hidden="true">*</span></label>
+          <input class="form-control" id="newUserPasswordConfirm" name="password2" type="password"
+            autocomplete="new-password" required aria-describedby="newUserPasswordConfirmError">
+          <div class="admin-user-create-error" id="newUserPasswordConfirmError" data-user-create-error="password2" hidden></div>
+        </div>
+        <p class="form-text mt-3 mb-0">Use a unique password that is difficult to guess.</p>
+      </section>
+    </div>
+
+    <div class="admin-user-create-footer">
+      <button type="button" class="btn btn-outline-secondary" data-user-create-close data-user-create-cancel>Cancel</button>
+      <button type="button" class="btn btn-success" data-user-create-next>Next Step <i class="fa-solid fa-arrow-right ms-1" aria-hidden="true"></i></button>
+      <button type="submit" class="btn btn-success" data-user-create-submit hidden>
+        Create User <i class="fa-solid fa-arrow-right ms-1" aria-hidden="true"></i>
+      </button>
+    </div>
+  </form>
+</dialog>
+<script>
+(function () {
+  var dialog = document.getElementById('adminUserCreateDialog');
+  var form = document.getElementById('adminUserCreateForm');
+  var openButton = document.querySelector('[data-user-create-open]');
+  if (!dialog || !form || !openButton) return;
+
+  var panels = Array.prototype.slice.call(form.querySelectorAll('[data-user-create-panel]'));
+  var indicators = Array.prototype.slice.call(form.querySelectorAll('[data-user-create-indicator]'));
+  var progressTrack = form.querySelector('.admin-user-create-progress-track');
+  var status = form.querySelector('[data-user-create-status]');
+  var nextButton = form.querySelector('[data-user-create-next]');
+  var backButton = form.querySelector('[data-user-create-back]');
+  var submitButton = form.querySelector('[data-user-create-submit]');
+  var currentStep = 0;
+
+  function setStep(step, focusPanel) {
+    currentStep = step;
+    dialog.setAttribute('data-user-create-step', String(step));
+    panels.forEach(function (panel, index) {
+      panel.hidden = index !== currentStep;
+    });
+    indicators.forEach(function (indicator, index) {
+      indicator.classList.toggle('is-current', index === currentStep);
+      indicator.classList.toggle('is-complete', index < currentStep);
+      if (index === currentStep) {
+        indicator.setAttribute('aria-current', 'step');
+      } else {
+        indicator.removeAttribute('aria-current');
+      }
+    });
+    progressTrack.classList.toggle('is-complete', step === 1);
+    form.querySelector('[data-user-create-step-label]').textContent = (step + 1) + '/2';
+    nextButton.hidden = step !== 0;
+    backButton.disabled = step === 0;
+    form.querySelector('[data-user-create-cancel]').hidden = step !== 0;
+    submitButton.hidden = step !== 1;
+    if (focusPanel) {
+      var firstInput = panels[step].querySelector('input');
+      if (firstInput) firstInput.focus();
+    }
+  }
+
+  function clearErrors() {
+    form.querySelectorAll('.is-invalid').forEach(function (field) {
+      field.classList.remove('is-invalid');
+      field.removeAttribute('aria-invalid');
+    });
+    form.querySelectorAll('[data-user-create-error]').forEach(function (error) {
+      error.textContent = '';
+      error.hidden = true;
+    });
+    status.textContent = '';
+    status.hidden = true;
+  }
+
+  function validateStep(step) {
+    var inputs = panels[step].querySelectorAll('input');
+    for (var index = 0; index < inputs.length; index += 1) {
+      if (!inputs[index].checkValidity()) {
+        inputs[index].reportValidity();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  openButton.addEventListener('click', function () {
+    form.reset();
+    clearErrors();
+    setStep(0, false);
+    dialog.showModal();
+    var username = form.querySelector('[name="username"]');
+    if (username) username.focus();
+  });
+
+  form.querySelectorAll('[data-user-create-close]').forEach(function (button) {
+    button.addEventListener('click', function () { dialog.close(); });
+  });
+  dialog.addEventListener('click', function (event) {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.addEventListener('close', function () { openButton.focus(); });
+
+  nextButton.addEventListener('click', function () {
+    clearErrors();
+    if (validateStep(0)) setStep(1, true);
+  });
+  backButton.addEventListener('click', function () {
+    clearErrors();
+    setStep(0, true);
+  });
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    clearErrors();
+    if (currentStep === 0) {
+      if (validateStep(0)) setStep(1, true);
+      return;
+    }
+    if (!validateStep(1)) return;
+
+    submitButton.disabled = true;
+    status.textContent = 'Creating user...';
+    status.hidden = false;
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          return { response: response, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.response.ok || !result.data.success) {
+          var firstErrorStep = null;
+          var errorGroups = result.data.errors || {};
+          Object.keys(errorGroups).forEach(function (name) {
+            var messages = errorGroups[name].map(function (error) { return error.message; });
+            if (name === '__all__' || name === 'non_field_errors') {
+              status.textContent = messages.join(' ');
+              status.hidden = false;
+              return;
+            }
+            var field = Array.prototype.slice.call(form.querySelectorAll('[name]')).find(function (input) {
+              return input.name === name;
+            });
+            var errorElement = form.querySelector('[data-user-create-error="' + name + '"]');
+            if (field && errorElement) {
+              field.classList.add('is-invalid');
+              field.setAttribute('aria-invalid', 'true');
+              errorElement.textContent = messages.join(' ');
+              errorElement.hidden = false;
+              var panelIndex = panels.indexOf(field.closest('[data-user-create-panel]'));
+              if (firstErrorStep === null && panelIndex !== -1) firstErrorStep = panelIndex;
+            }
+          });
+          if (firstErrorStep !== null) {
+            setStep(firstErrorStep, false);
+            var firstInvalid = panels[firstErrorStep].querySelector('.is-invalid');
+            if (firstInvalid) firstInvalid.focus();
+          }
+          if (status.hidden) {
+            status.textContent = result.data.error || 'Please review the highlighted fields.';
+            status.hidden = false;
+          }
+          submitButton.disabled = false;
+          return;
+        }
+        dialog.close();
+        window.location.reload();
+      })
+      .catch(function (error) {
+        status.textContent = 'Unable to create user: ' + error.message;
+        status.hidden = false;
+        submitButton.disabled = false;
+      });
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}
